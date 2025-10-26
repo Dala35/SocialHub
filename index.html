@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SocialHub</title>
+    <!-- Carregando Tailwind CSS para Estilização -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilos personalizados para o app (mobile-first) */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px; /* Limite de largura para mobile/card */
+            background-color: white;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .input-field, .btn {
+            border-radius: 8px;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .input-field:focus {
+            border-color: #6d28d9; /* Cor roxa do botão */
+            box-shadow: 0 0 0 2px rgba(109, 40, 217, 0.2);
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+        /* Estilo para a mensagem de erro/sucesso (o balão) */
+        .error-message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            /* A cor de fundo será definida pelo JavaScript (vermelho para erro, verde para sucesso) */
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+            text-align: center;
+            min-width: 80%;
+        }
+        .error-message.show {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container rounded-xl">
+        <h1 id="app-title" class="text-3xl font-bold text-center mb-6 text-purple-700">SocialHub</h1>
+        
+        <!-- Formulário de Autenticação/Cadastro -->
+        <div id="auth-view">
+            <h2 id="form-title" class="text-xl font-semibold mb-6 text-gray-700">Bem-vindo!</h2>
+
+            <form id="auth-form" class="space-y-4">
+                <input type="text" id="name-input" placeholder="Nome Completo" class="input-field w-full p-3 border border-gray-300 hidden" required>
+                <input type="email" id="email-input" placeholder="E-mail" class="input-field w-full p-3 border border-gray-300" required>
+                <input type="password" id="password-input" placeholder="Senha" class="input-field w-full p-3 border border-gray-300" required>
+                
+                <button type="submit" id="auth-button" class="btn w-full p-3 text-white font-semibold bg-purple-600 hover:bg-purple-700">
+                    ENTRAR
+                </button>
+
+                <p id="toggle-link" class="text-center text-sm text-purple-600 cursor-pointer hover:text-purple-800 transition duration-150">
+                    Ainda não tem conta? Clique para Cadastrar
+                </p>
+            </form>
+        </div>
+
+        <!-- Visão Principal (Após Login) -->
+        <div id="main-view" class="hidden">
+            <h2 class="text-xl font-semibold mb-6 text-gray-700">Olá, <span id="user-name"></span>!</h2>
+            <div id="post-feed" class="space-y-4">
+                <p class="text-gray-500">O seu Feed será carregado aqui.</p>
+                <!-- O feed de posts será inserido aqui dinamicamente -->
+            </div>
+            
+            <button id="logout-button" class="btn w-full mt-6 p-3 text-white font-semibold bg-red-500 hover:bg-red-600">
+                Sair
+            </button>
+        </div>
+    </div>
+
+    <!-- Container da Mensagem de Erro (o balão vermelho) -->
+    <div id="error-box" class="error-message"></div>
+
+    <!-- Configuração e Lógica do Firebase -->
+    <script type="module">
+        // --- 1. CONFIGURAÇÃO E VARIÁVEIS GLOBAIS ---
+        // O Canvas fornece automaticamente a configuração do Firebase.
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        
+        // CONFIGURAÇÃO MANUAL DO FIREBASE (CORRIGIDA)
+        // Usamos o ID do projeto 'socialhub-7d6b0' que encontramos na sua URL para garantir a conexão.
+        const hardcodedFirebaseConfig = {
+            projectId: 'socialhub-7d6b0' 
+        };
+
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // Tentativa de usar a config do ambiente, misturando com a correção manual
+        let firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        
+        // Sobrescrever o projectId na config real com o valor correto para garantir a conexão
+        if (hardcodedFirebaseConfig.projectId) {
+             firebaseConfig.projectId = hardcodedFirebaseConfig.projectId;
+        }
+
+
+        if (!firebaseConfig || !firebaseConfig.projectId) {
+            console.error("Firebase config not properly initialized. Cannot proceed.");
+            document.getElementById('auth-button').innerText = 'Erro de Configuração';
+            document.getElementById('auth-button').disabled = true;
+        }
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // Ativar logs para debug
+        setLogLevel('debug'); 
+
+        let app, auth, db;
+        let isRegistering = false; // Estado para alternar entre Login e Cadastro
+        
+        // --- 2. ELEMENTOS DO DOM ---
+        const authView = document.getElementById('auth-view');
+        const mainView = document.getElementById('main-view');
+        const formTitle = document.getElementById('form-title');
+        const authForm = document.getElementById('auth-form');
+        const nameInput = document.getElementById('name-input');
+        const emailInput = document.getElementById('email-input');
+        const passwordInput = document.getElementById('password-input');
+        const authButton = document.getElementById('auth-button');
+        const toggleLink = document.getElementById('toggle-link');
+        const userNameSpan = document.getElementById('user-name');
+        const logoutButton = document.getElementById('logout-button');
+        const errorBox = document.getElementById('error-box');
+
+        // --- 3. FUNÇÕES DE UTILIDADE ---
+
+        /**
+         * Exibe uma notificação temporária na tela.
+         * isSuccess = false por padrão para tratar como erro (vermelho) a menos que explicitamente declarado.
+         * @param {string} message - A mensagem.
+         * @param {boolean} isSuccess - Se a mensagem é de sucesso (usa console.log e cor verde).
+         */
+        function displayNotification(message, isSuccess = false) {
+            if (isSuccess) {
+                console.log('SUCESSO:', message);
+                errorBox.style.backgroundColor = '#10b981'; // Cor verde para sucesso
+            } else {
+                console.error('ERRO:', message);
+                errorBox.style.backgroundColor = '#ef4444'; // Cor vermelha para erro
+            }
+
+            errorBox.innerText = message;
+            errorBox.classList.add('show');
+            setTimeout(() => {
+                errorBox.classList.remove('show');
+                // Opcionalmente, resetar a cor de fundo (Embora o próximo set irá sobrescrever)
+                errorBox.style.backgroundColor = ''; 
+            }, 5000);
+        }
+        
+        /**
+         * Alterna a interface entre Login e Cadastro.
+         */
+        function toggleAuthMode() {
+            isRegistering = !isRegistering;
+            if (isRegistering) {
+                formTitle.innerText = 'Crie sua Conta';
+                nameInput.classList.remove('hidden');
+                authButton.innerText = 'CADASTRAR';
+                toggleLink.innerText = 'Já tem conta? Clique para Entrar';
+            } else {
+                formTitle.innerText = 'Acesse sua Conta';
+                nameInput.classList.add('hidden');
+                authButton.innerText = 'ENTRAR';
+                toggleLink.innerText = 'Ainda não tem conta? Clique para Cadastrar';
+            }
+        }
+        
+        /**
+         * Atualiza o estado da interface (se logado ou não).
+         * @param {Object | null} user - O objeto User do Firebase, ou null.
+         */
+        function updateUI(user) {
+            if (user) {
+                authView.classList.add('hidden');
+                mainView.classList.remove('hidden');
+                // Exibe o nome do usuário (ou 'Usuário' se não houver nome)
+                userNameSpan.innerText = user.displayName || 'Usuário'; 
+                // Aqui você pode começar a carregar o feed de posts
+                console.log('Usuário autenticado:', user.uid, 'Nome:', user.displayName);
+
+            } else {
+                authView.classList.remove('hidden');
+                mainView.classList.add('hidden');
+                // Reseta os campos e habilita o botão após a inicialização
+                emailInput.value = '';
+                passwordInput.value = '';
+                authButton.innerText = isRegistering ? 'CADASTRAR' : 'ENTRAR';
+                authButton.disabled = false;
+            }
+        }
+
+        // --- 4. FUNÇÕES DE AUTENTICAÇÃO ---
+
+        /**
+         * Tenta se registrar no Firebase.
+         */
+        async function handleRegister(email, password, name) {
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                // 1. Atualizar o nome de exibição no Firebase Auth
+                await updateProfile(user, { displayName: name });
+
+                // 2. Salvar dados adicionais (como o nome) no Firestore
+                // O caminho do Firestore depende do APP ID do ambiente do Canvas
+                const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/profile/info`);
+                await setDoc(userDocRef, { 
+                    name: name,
+                    email: email,
+                    createdAt: new Date() 
+                });
+                
+                displayNotification("Cadastro realizado com sucesso! Bem-vindo(a) ao SocialHub.", true);
+            } catch (error) {
+                authButton.innerText = 'CADASTRAR';
+                authButton.disabled = false;
+                handleAuthError(error, "Cadastro");
+            }
+        }
+
+        /**
+         * Tenta fazer login no Firebase.
+         */
+        async function handleLogin(email, password) {
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                displayNotification("Login realizado com sucesso!", true);
+            } catch (error) {
+                authButton.innerText = 'ENTRAR';
+                authButton.disabled = false;
+                handleAuthError(error, "Login");
+            }
+        }
+        
+        /**
+         * Processa e exibe erros de autenticação.
+         */
+        function handleAuthError(error, action) {
+            let userMessage = `Falha no ${action}. Ocorreu um erro desconhecido.`;
+            
+            // Mapeamento de erros do Firebase para mensagens amigáveis
+            switch (error.code) {
+                case 'auth/email-already-in-use':
+                    userMessage = 'Este e-mail já está em uso. Tente fazer Login.';
+                    break;
+                case 'auth/invalid-email':
+                    userMessage = 'O formato do e-mail é inválido.';
+                    break;
+                case 'auth/weak-password':
+                    userMessage = 'A senha deve ter pelo menos 6 caracteres.';
+                    break;
+                case 'auth/user-not-found':
+                case 'auth/wrong-password':
+                    userMessage = 'E-mail ou senha inválidos. Verifique suas credenciais.';
+                    break;
+                case 'auth/operation-not-allowed':
+                    // ESTE É O ERRO PERSISTENTE QUE VOCÊ ESTÁ VENDO
+                    userMessage = '🚨 Bloqueio de Configuração (Cache). A solução é RECARREGAR o ambiente! 🔄';
+                    break;
+                default:
+                    console.error("Firebase Error:", error.code, error.message);
+                    userMessage = `Erro Firebase (${action}): ${error.code.replace('auth/', '')}.`;
+                    break;
+            }
+            displayNotification(userMessage); // Chamada para a nova função (isSuccess=false por padrão)
+        }
+
+        // --- 5. INICIALIZAÇÃO E LISTENERS ---
+
+        /**
+         * Inicializa o Firebase e o processo de autenticação.
+         */
+        async function initializeAppAndAuth() {
+            try {
+                if (firebaseConfig && firebaseConfig.projectId) {
+                    app = initializeApp(firebaseConfig);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+                    
+                    // Log para confirmar que o ID corrigido está sendo usado
+                    console.log(`Conectando ao Firebase Project ID: ${firebaseConfig.projectId}`);
+
+                } else {
+                    throw new Error("Firebase config is null or missing Project ID.");
+                }
+
+                // 1. Lógica de Autenticação Inicial com o Token do Canvas (se existir)
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    // Se não houver token, usa login anônimo
+                    await signInAnonymously(auth);
+                }
+
+                // 2. Listener para o estado de autenticação (sempre será chamado)
+                onAuthStateChanged(auth, (user) => {
+                    updateUI(user);
+                });
+
+            } catch (error) {
+                console.error("Erro na inicialização do Firebase/Auth:", error);
+                displayNotification("Erro crítico de inicialização. Verifique o console.");
+                authButton.innerText = 'ERRO INIT';
+            }
+        }
+
+        // --- LISTENERS DE EVENTOS ---
+
+        // Inicia o processo de login/cadastro
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
+            const name = nameInput.value.trim();
+
+            if (!email || !password || (isRegistering && !name)) {
+                displayNotification("Por favor, preencha todos os campos.");
+                return;
+            }
+
+            authButton.disabled = true;
+            authButton.innerText = isRegistering ? 'CADASTRANDO...' : 'ENTRANDO...';
+
+            if (isRegistering) {
+                await handleRegister(email, password, name);
+            } else {
+                await handleLogin(email, password);
+            }
+        });
+
+        // Alterna entre Entrar e Cadastrar
+        toggleLink.addEventListener('click', toggleAuthMode);
+        
+        // Botão de Sair
+        logoutButton.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                displayNotification("Sessão encerrada com sucesso.", true);
+            } catch (error) {
+                displayNotification("Falha ao sair. Tente novamente.");
+            }
+        });
+
+        // Inicializa o aplicativo
+        initializeAppAndAuth();
+        
+    </script>
+</body>
+</html>
