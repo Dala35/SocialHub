@@ -409,9 +409,15 @@
         </div>
     </div>
     
+    <!-- JAVASCRIPT PRINCIPAL -->
+    <script type="module">
+        // --- VARIÁVEIS GLOBAIS DO AMBIENTE ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+       
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=`;
+        const apiKey = ""; // Chave será fornecida pelo Canvas em tempo de execução
 
-
-        
         // --- INSTÂNCIAS FIREBASE ---
         let app, db, auth, currentUserId = null, currentUserName = "Usuário";
         
