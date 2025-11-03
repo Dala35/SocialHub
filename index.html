@@ -1,385 +1,2020 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SocialHub</title>
-    <!-- Carregando Tailwind CSS para Estilização -->
+    <title>SocialHub - Feed e Perfil</title>
+    <!-- Carregando Tailwind CSS para um design moderno e responsivo -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* Estilos personalizados para o app (mobile-first) */
+        :root {
+            --primary-color: #6366f1; /* Indigo 500 */
+            --primary-dark: #4f46e5;  /* Indigo 600 */
+            --text-primary: #1f2937;  /* Gray 800 */
+        }
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f7f7f7;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
+            background-color: #f3f4f6;
+            padding-top: 64px; /* Espaço para o header fixo */
         }
-        .container {
-            width: 100%;
-            max-width: 400px; /* Limite de largura para mobile/card */
+        .header-bg {
             background-color: white;
-            padding: 30px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
         }
-        .input-field, .btn {
-            border-radius: 8px;
-            transition: transform 0.1s, box-shadow 0.1s;
+        .post-card {
+            background-color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+            transition: all 0.2s ease-in-out;
         }
-        .input-field:focus {
-            border-color: #6d28d9; /* Cor roxa do botão */
-            box-shadow: 0 0 0 2px rgba(109, 40, 217, 0.2);
+        .btn-interact {
+            transition: color 0.1s ease-in-out, background-color 0.1s ease-in-out;
         }
-        .btn:active {
-            transform: scale(0.98);
+        .btn-interact:hover {
+            color: var(--primary-color);
         }
-        /* Estilo para a mensagem de erro/sucesso (o balão) */
-        .error-message {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            /* A cor de fundo será definida pelo JavaScript (vermelho para erro, verde para sucesso) */
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
-            text-align: center;
-            min-width: 80%;
+        .btn-create {
+            background-color: var(--primary-color);
+            transition: transform 0.1s ease-in-out, opacity 0.1s ease-in-out;
         }
-        .error-message.show {
-            opacity: 1;
-            visibility: visible;
+        .btn-create:hover {
+            background-color: var(--primary-dark);
+            transform: scale(1.05);
+        }
+        .modal-open {
+            overflow: hidden; 
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 4px;
+            transition: color 0.1s;
+        }
+        .nav-item:hover {
+            color: var(--primary-dark);
+        }
+        .explore-highlight:hover {
+            opacity: 0.9;
         }
     </style>
 </head>
 <body>
 
-    <div class="container rounded-xl">
-        <h1 id="app-title" class="text-3xl font-bold text-center mb-6 text-purple-700">SocialHub</h1>
-        
-        <!-- Formulário de Autenticação/Cadastro -->
-        <div id="auth-view">
-            <h2 id="form-title" class="text-xl font-semibold mb-6 text-gray-700">Bem-vindo!</h2>
-
-            <form id="auth-form" class="space-y-4">
-                <input type="text" id="name-input" placeholder="Nome Completo" class="input-field w-full p-3 border border-gray-300 hidden" required>
-                <input type="email" id="email-input" placeholder="E-mail" class="input-field w-full p-3 border border-gray-300" required>
-                <input type="password" id="password-input" placeholder="Senha" class="input-field w-full p-3 border border-gray-300" required>
-                
-                <button type="submit" id="auth-button" class="btn w-full p-3 text-white font-semibold bg-purple-600 hover:bg-purple-700">
-                    ENTRAR
+    <!-- Cabeçalho Fixo (Mobile First) -->
+    <header class="fixed top-0 left-0 w-full header-bg z-40">
+        <div class="max-w-xl mx-auto flex justify-between items-center p-3">
+            <h1 id="header-title" class="text-2xl font-extrabold text-indigo-600">SocialHub</h1>
+            <div class="flex items-center space-x-3">
+                <!-- Ícone de Notificações/Mensagens -->
+                <button class="p-2 rounded-full text-gray-500 hover:text-indigo-600 transition">
+                    <!-- SVG para Mensagens (Message Circle) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.8 2h8.4A1.8 1.8 0 0 1 18 3.8v8.4A1.8 1.8 0 0 1 16.2 14H14l-4 4-4-4H5.8A1.8 1.8 0 0 1 4 12.2V3.8A1.8 1.8 0 0 1 5.8 2z"/></svg>
                 </button>
+                <!-- Foto de Perfil (Simulação) - CLICÁVEL -->
+                <button onclick="renderPage('profile')" aria-label="Abrir Perfil">
+                    <img id="header-profile-img" src="https://placehold.co/36x36/6366f1/ffffff?text=U" alt="Perfil" class="w-9 h-9 object-cover rounded-full border-2 border-indigo-500">
+                </button>
+            </div>
+        </div>
+    </header>
 
-                <p id="toggle-link" class="text-center text-sm text-purple-600 cursor-pointer hover:text-purple-800 transition duration-150">
-                    Ainda não tem conta? Clique para Cadastrar
-                </p>
-            </form>
+    <!-- Container Principal do Conteúdo -->
+    <main id="main-content-wrapper" class="max-w-xl mx-auto p-4 space-y-4 pb-20 sm:pb-4">
+        
+        <!-- Botão Flutuante para Criar Postagem (FAB) - Visível apenas no Feed -->
+        <button id="create-post-btn" class="fixed bottom-20 right-4 btn-create p-4 rounded-full text-white shadow-xl z-20" aria-label="Criar Nova Postagem">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+
+        <!-- ============================== -->
+        <!-- 1. VISÃO DO FEED -->
+        <!-- ============================== -->
+        <div id="feed-view">
+            <!-- Mock de Criação Rápida de Post -->
+            <div class="post-card p-4 rounded-xl">
+                <p class="text-gray-500 mb-2">O que você está co-criando hoje?</p>
+                <input type="text" placeholder="Compartilhe seu pensamento..." 
+                       class="w-full p-3 border border-gray-200 rounded-lg text-sm focus:border-indigo-500 focus:outline-none transition cursor-pointer"
+                       onclick="openPostModal()" readonly>
+                <div class="flex justify-end mt-3">
+                     <button class="text-xs text-indigo-600 hover:text-indigo-800 font-medium py-1 px-3 rounded-lg transition" onclick="openPostModal()">
+                        Postar
+                    </button>
+                </div>
+            </div>
+            <div class="text-xs text-gray-400 text-center py-2">
+                ID do Usuário: <span id="display-user-id" class="current-user-id font-mono">Carregando...</span>
+            </div>
+
+            <!-- Div para Inserir Postagens Dinamicamente -->
+            <div id="feed-container" class="space-y-6">
+                <!-- As postagens serão injetadas aqui pelo Firestore onSnapshot -->
+                <p class="text-center text-gray-500 pt-8">Conectando ao Fluxo de Dados...</p>
+            </div>
         </div>
 
-        <!-- Visão Principal (Após Login) -->
-        <div id="main-view" class="hidden">
-            <h2 class="text-xl font-semibold mb-6 text-gray-700">Olá, <span id="user-name"></span>!</h2>
-            <div id="post-feed" class="space-y-4">
-                <p class="text-gray-500">O seu Feed será carregado aqui.</p>
-                <!-- O feed de posts será inserido aqui dinamicamente -->
+        <!-- ============================== -->
+        <!-- 2. VISÃO DO PERFIL -->
+        <!-- ============================== -->
+        <div id="profile-view" class="hidden">
+            <!-- Conteúdo do Perfil -->
+            <div class="relative bg-indigo-700 h-40 rounded-xl overflow-hidden shadow-lg">
+                <img src="https://placehold.co/600x160/4f46e5/e0e7ff?text=Campo+de+Energia+Manifestada" 
+                     alt="Banner do Perfil" 
+                     class="w-full h-full object-cover opacity-80">
             </div>
             
-            <button id="logout-button" class="btn w-full mt-6 p-3 text-white font-semibold bg-red-500 hover:bg-red-600">
-                Sair
-            </button>
+            <div class="post-card -mt-16 pt-4 rounded-xl">
+                <div class="flex flex-col items-center px-4">
+                    <img id="profile-avatar-img" src="https://placehold.co/120x120/6366f1/ffffff?text=U" 
+                         alt="Avatar do Usuário" 
+                         class="w-24 h-24 object-cover rounded-full border-4 border-white shadow-xl">
+                    
+                    <h2 id="profile-name" class="text-2xl font-bold text-gray-900 mt-3">Manifestador da Luz</h2>
+                    <p class="text-sm text-indigo-600 font-medium current-user-id" id="display-user-id-profile">Carregando...</p>
+                    <p id="profile-bio" class="text-gray-600 text-center mt-2 px-4 italic text-sm">
+                        "Ancorando a visão, co-criando a realidade. Buscador da luz-evolução."
+                    </p>
+
+                    <div class="flex justify-around w-full mt-4 border-t border-gray-100 pt-4">
+                        <div class="text-center">
+                            <span class="block text-xl font-bold text-gray-800">42</span>
+                            <span class="block text-sm text-gray-500">Manifestações</span>
+                        </div>
+                        <div class="text-center">
+                            <span class="block text-xl font-bold text-gray-800">1.2K</span>
+                            <span class="block text-sm text-gray-500">Conexões</span>
+                        </div>
+                        <div class="text-center">
+                            <span class="block text-xl font-bold text-gray-800">720</span>
+                            <span class="block text-sm text-gray-500">Ressonâncias</span>
+                        </div>
+                    </div>
+
+                    <button id="profile-edit-btn" onclick="openEditProfileModal()" class="w-full mt-4 bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold py-2 rounded-full transition">
+                        Editar Perfil
+                    </button>
+                </div>
+                
+                <div class="flex border-t border-gray-100 mt-6 pt-4">
+                    <button class="flex-1 text-center py-2 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600">
+                        Postagens
+                    </button>
+                    <button class="flex-1 text-center py-2 text-sm font-medium text-gray-500 hover:text-indigo-600 transition">
+                        Atividade
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-3 gap-1 mt-4 p-4">
+                    <div class="aspect-square bg-gray-300 rounded-lg"></div>
+                    <div class="aspect-square bg-gray-300 rounded-lg"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================== -->
+        <!-- 3. VISÃO DO EXPLORAR -->
+        <!-- ============================== -->
+        <div id="explore-view" class="hidden">
+            <!-- Conteúdo do Explorar (Mock) -->
+            <div class="mb-6">
+                <input type="search" placeholder="Buscar manifestações, usuários ou interesses..."
+                       class="w-full p-3 border border-gray-300 rounded-full text-base focus:border-indigo-500 focus:outline-none transition"
+                       aria-label="Buscar">
+            </div>
+
+            <div class="post-card p-4 rounded-xl mb-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mr-2 text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5h4L17 5zM3 5h4L3 5zM12 11h7l-5 5-5-5zM5 19h7l-5-5-5 5z"/></svg>
+                    Tendências de Luz ✨
+                </h3>
+                <div class="space-y-2">
+                    <a href="#" class="block text-indigo-600 hover:text-indigo-800 transition">#LuzEvolução <span class="text-gray-500 ml-2 text-sm">(+1.5K)</span></a>
+                    <a href="#" class="block text-indigo-600 hover:text-indigo-800 transition">#NexusCriativo <span class="text-gray-500 ml-2 text-sm">(+890)</span></a>
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                 <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mr-2 text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Visões em Destaque
+                </h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="aspect-square bg-gray-300 rounded-xl overflow-hidden shadow-md relative group cursor-pointer explore-highlight">
+                        <img src="https://placehold.co/400x400/34d399/ffffff?text=Design+de+Futuro" alt="Postagem em Destaque" class="w-full h-full object-cover transition duration-300 group-hover:scale-105">
+                        <div class="absolute inset-0 bg-black bg-opacity-30 flex items-end p-3 opacity-0 group-hover:opacity-100 transition duration-300">
+                            <span class="text-white text-xs font-medium truncate">#ManifestoIA</span>
+                        </div>
+                    </div>
+                    <div class="aspect-square bg-gray-300 rounded-xl overflow-hidden shadow-md relative group cursor-pointer explore-highlight">
+                        <img src="https://placehold.co/400x400/fcd34d/1f2937?text=Arte+Vibracional" alt="Postagem em Destaque" class="w-full h-full object-cover transition duration-300 group-hover:scale-105">
+                        <div class="absolute inset-0 bg-black bg-opacity-30 flex items-end p-3 opacity-0 group-hover:opacity-100 transition duration-300">
+                            <span class="text-white text-xs font-medium truncate">Co-Criação_Mútua</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================== -->
+        <!-- 4. VISÃO DOS ALERTAS (NOTIFICAÇÕES) -->
+        <!-- ============================== -->
+        <div id="alerts-view" class="hidden">
+            <h2 class="text-2xl font-extrabold text-gray-800 mb-6">Suas Frequências Resonantes</h2>
+            
+            <div class="space-y-4">
+                <!-- Mock Alert 1: Like/Ressonância -->
+                <div class="flex items-start post-card p-4 rounded-xl border border-indigo-100">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white">
+                        <!-- Ícone de Coração -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <p class="text-sm text-gray-700">
+                            <span class="font-bold">@GuardiãoDaFrequência</span> enviou uma <span class="text-indigo-600 font-semibold">Ressonância</span> à sua última manifestação.
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1">"O design do Feed é crucial..." · 10 minutos atrás</p>
+                    </div>
+                </div>
+
+                <!-- Mock Alert 2: Comment/Comentário -->
+                <div class="flex items-start post-card p-4 rounded-xl border border-green-100">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white">
+                        <!-- Ícone de Comentário -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M7.8 2h8.4A1.8 1.8 0 0 1 18 3.8v8.4A1.8 1.8 0 0 1 16.2 14H14l-4 4-4-4H5.8A1.8 1.8 0 0 1 4 12.2V3.8A1.8 1.8 0 0 1 5.8 2z"/></svg>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <p class="text-sm text-gray-700">
+                            <span class="font-bold">@Vibrante_Mente</span> deixou um <span class="text-green-600 font-semibold">Comentário</span> na sua manifestação.
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1">"Nova descoberta na área de IA..." · 30 minutos atrás</p>
+                    </div>
+                </div>
+
+                <!-- Mock Alert 3: New Connection/Conexão -->
+                <div class="flex items-start post-card p-4 rounded-xl border border-yellow-100">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-gray-900">
+                        <!-- Ícone de Usuário -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8h3M20 12h3M17 10h6"/></svg>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <p class="text-sm text-gray-700">
+                            <span class="font-bold">@ÂncoraEstelar</span> iniciou uma <span class="text-yellow-600 font-semibold">Nova Conexão</span> com você.
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1">3 horas atrás</p>
+                    </div>
+                </div>
+                
+                <p class="text-center text-gray-400 pt-4 text-sm">Fim das notificações por hoje.</p>
+            </div>
+        </div>
+        <!-- FIM DA VISÃO DOS ALERTAS -->
+
+    </main>
+    
+    <!-- MODAL DE CRIAÇÃO DE POSTAGEM -->
+    <div id="create-post-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300" onclick="closePostModal()">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg m-4 transform scale-95 transition-transform duration-300" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center border-b p-4 sm:p-5">
+                <h2 class="text-xl font-bold text-gray-800">Co-crie uma Manifestação ✨</h2>
+                <button onclick="closePostModal()" class="text-gray-400 hover:text-gray-700 p-2 rounded-full transition" aria-label="Fechar Modal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <form id="new-post-form" class="p-4 sm:p-5">
+                <div class="flex items-center mb-4">
+                    <img id="post-modal-avatar-img" src="https://placehold.co/40x40/6366f1/ffffff?text=U" alt="Seu Perfil" class="w-10 h-10 object-cover rounded-full border-2 border-indigo-500">
+                    <div class="ml-3">
+                        <span id="post-modal-author-name" class="block text-sm font-semibold text-gray-800">Manifestador (Você)</span>
+                        <span class="block text-xs text-gray-500 current-user-id">Carregando...</span>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <textarea id="post-content" required rows="5" 
+                              class="w-full p-3 text-lg border border-gray-200 rounded-xl resize-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none transition" 
+                              placeholder="Compartilhe sua nova ideia, visão ou descoberta para o fluxo de energia da comunidade..."></textarea>
+                </div>
+                <div class="flex justify-between items-center border-t border-gray-100 pt-3">
+                    <button type="button" class="flex items-center text-gray-500 hover:text-indigo-600 transition p-2 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        <span class="ml-2 hidden sm:inline text-sm font-medium">Foto/Vídeo</span>
+                    </button>
+                    <button type="submit" class="btn-create text-white font-bold py-2 px-6 rounded-lg shadow-md uppercase tracking-wide text-sm">
+                        Postar
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
+    <!-- FIM DO MODAL DE CRIAÇÃO -->
+    
+    <!-- MODAL DE EDIÇÃO DE PERFIL (NOVO) -->
+    <div id="edit-profile-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300" onclick="closeEditProfileModal()">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg m-4 transform scale-95 transition-transform duration-300" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center border-b p-4 sm:p-5">
+                <h2 class="text-xl font-bold text-gray-800">Ajustar Perfil</h2>
+                <button onclick="closeEditProfileModal()" class="text-gray-400 hover:text-gray-700 p-2 rounded-full transition" aria-label="Fechar Modal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <form id="edit-profile-form" class="p-4 sm:p-5">
+                <div class="mb-4">
+                    <label for="edit-profile-name" class="block text-sm font-medium text-gray-700 mb-1">Nome de Co-Criação</label>
+                    <input type="text" id="edit-profile-name" required maxlength="50"
+                           class="w-full p-3 border border-gray-200 rounded-lg text-base focus:border-indigo-500 focus:outline-none transition" 
+                           placeholder="Seu nome no SocialHub">
+                </div>
+                <div class="mb-4">
+                    <label for="edit-profile-bio" class="block text-sm font-medium text-gray-700 mb-1">Bio/Ancoragem de Propósito</label>
+                    <textarea id="edit-profile-bio" rows="4" maxlength="160"
+                              class="w-full p-3 border border-gray-200 rounded-lg resize-none focus:border-indigo-500 focus:outline-none transition" 
+                              placeholder="Fale um pouco sobre sua jornada e suas manifestações. Máximo 160 caracteres."></textarea>
+                </div>
+                
+                <div class="flex justify-end border-t border-gray-100 pt-3">
+                    <button type="submit" class="btn-create text-white font-bold py-2 px-6 rounded-lg shadow-md uppercase tracking-wide text-sm">
+                        Salvar Ajustes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- FIM DO MODAL DE EDIÇÃO DE PERFIL -->
 
-    <!-- Container da Mensagem de Erro (o balão vermelho) -->
-    <div id="error-box" class="error-message"></div>
+    <!-- NAVEGAÇÃO INFERIOR FIXA (MOBILE) -->
+    <nav class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 z-30 sm:hidden shadow-xl">
+        <div class="flex justify-around items-center h-16 max-w-xl mx-auto">
+            
+            <!-- Feed/Home (Ativo) -->
+            <a href="#" class="nav-item text-indigo-600 font-semibold" data-target="feed" onclick="event.preventDefault(); renderPage('feed')">
+                <svg id="nav-icon-feed" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55v7.45a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7.45"/><path d="M12 2l-8 8h16z"/></svg>
+                <span class="text-xs mt-1">Feed</span>
+            </a>
+            
+            <!-- Busca/Explore -->
+            <a href="#" class="nav-item text-gray-500 font-normal hover:text-indigo-600" data-target="explore" onclick="event.preventDefault(); renderPage('explore')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <span class="text-xs mt-1">Explorar</span>
+            </a>
+            
+            <!-- Alertas/Notificações (NOVO) -->
+            <a href="#" class="nav-item text-gray-500 font-normal hover:text-indigo-600" data-target="alerts" onclick="event.preventDefault(); renderPage('alerts')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                <span class="text-xs mt-1">Alertas</span>
+            </a>
+            
+            <!-- Perfil -->
+            <a href="#" class="nav-item text-gray-500 font-normal hover:text-indigo-600" data-target="profile" onclick="event.preventDefault(); renderPage('profile')">
+                <svg id="nav-icon-profile" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span class="text-xs mt-1">Perfil</span>
+            </a>
+        </div>
+    </nav>
+    <!-- FIM DA NAVEGAÇÃO INFERIOR -->
 
-    <!-- Configuração e Lógica do Firebase -->
+    <!-- Lógica JavaScript e Firebase -->
     <script type="module">
-        // --- 1. CONFIGURAÇÃO E VARIÁVEIS GLOBAIS ---
-        // O Canvas fornece automaticamente a configuração do Firebase.
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        
-        // CONFIGURAÇÃO MANUAL DO FIREBASE (CORRIGIDA)
-        // Usamos o ID do projeto 'socialhub-7d6b0' que encontramos na sua URL para garantir a conexão.
-        const hardcodedFirebaseConfig = {
-            projectId: 'socialhub-7d6b0' 
-        };
+        // Importações do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // Importa setDoc para criar/atualizar o documento de perfil
+        import { getFirestore, doc, addDoc, updateDoc, onSnapshot, collection, query, setLogLevel, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // Variáveis globais para Firebase e Estado
+        let app, db, auth;
+        let userId = 'loading'; // ID do usuário autenticado
+        let postsState = []; // Estado global para postagens
+        
+        // Estado de Perfil do Usuário
+        let userName = 'Manifestador da Luz';
+        let userBio = "Ancorando a visão, co-criando a realidade. Buscador da luz-evolução.";
+        
+        // Constantes do ambiente (fornecidas pela Canvas)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         
-        // Tentativa de usar a config do ambiente, misturando com a correção manual
-        let firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        // Caminho de coleção para dados públicos (visíveis para todos)
+        const POSTS_COLLECTION_PATH = `artifacts/${appId}/public/data/posts`;
         
-        // Sobrescrever o projectId na config real com o valor correto para garantir a conexão
-        if (hardcodedFirebaseConfig.projectId) {
-             firebaseConfig.projectId = hardcodedFirebaseConfig.projectId;
-        }
-
-
-        if (!firebaseConfig || !firebaseConfig.projectId) {
-            console.error("Firebase config not properly initialized. Cannot proceed.");
-            document.getElementById('auth-button').innerText = 'Erro de Configuração';
-            document.getElementById('auth-button').disabled = true;
-        }
-
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // Elementos do DOM
+        const feedContainer = document.getElementById('feed-container');
+        const createPostBtn = document.getElementById('create-post-btn');
+        const createPostModal = document.getElementById('create-post-modal');
+        const newPostForm = document.getElementById('new-post-form');
+        const postContentInput = document.getElementById('post-content');
+        const feedView = document.getElementById('feed-view');
+        const profileView = document.getElementById('profile-view');
+        const exploreView = document.getElementById('explore-view');
+        const alertsView = document.getElementById('alerts-view');
+        const headerTitle = document.getElementById('header-title');
+        const userIdDisplayElements = document.querySelectorAll('.current-user-id');
         
-        // Ativar logs para debug
-        setLogLevel('debug'); 
+        // Elementos do Perfil
+        const profileNameEl = document.getElementById('profile-name');
+        const profileBioEl = document.getElementById('profile-bio');
+        const editProfileModal = document.getElementById('edit-profile-modal');
+        const editProfileForm = document.getElementById('edit-profile-form');
+        const editProfileNameInput = document.getElementById('edit-profile-name');
+        const editProfileBioInput = document.getElementById('edit-profile-bio');
+        const headerProfileImg = document.getElementById('header-profile-img');
+        const profileAvatarImg = document.getElementById('profile-avatar-img');
+        const postModalAvatarImg = document.getElementById('post-modal-avatar-img');
+        const postModalAuthorName = document.getElementById('post-modal-author-name');
 
-        let app, auth, db;
-        let isRegistering = false; // Estado para alternar entre Login e Cadastro
-        
-        // --- 2. ELEMENTOS DO DOM ---
-        const authView = document.getElementById('auth-view');
-        const mainView = document.getElementById('main-view');
-        const formTitle = document.getElementById('form-title');
-        const authForm = document.getElementById('auth-form');
-        const nameInput = document.getElementById('name-input');
-        const emailInput = document.getElementById('email-input');
-        const passwordInput = document.getElementById('password-input');
-        const authButton = document.getElementById('auth-button');
-        const toggleLink = document.getElementById('toggle-link');
-        const userNameSpan = document.getElementById('user-name');
-        const logoutButton = document.getElementById('logout-button');
-        const errorBox = document.getElementById('error-box');
-
-        // --- 3. FUNÇÕES DE UTILIDADE ---
+        let currentPage = 'feed';
 
         /**
-         * Exibe uma notificação temporária na tela.
-         * isSuccess = false por padrão para tratar como erro (vermelho) a menos que explicitamente declarado.
-         * @param {string} message - A mensagem.
-         * @param {boolean} isSuccess - Se a mensagem é de sucesso (usa console.log e cor verde).
+         * Retorna a referência para o documento de perfil privado do usuário.
          */
-        function displayNotification(message, isSuccess = false) {
-            if (isSuccess) {
-                console.log('SUCESSO:', message);
-                errorBox.style.backgroundColor = '#10b981'; // Cor verde para sucesso
-            } else {
-                console.error('ERRO:', message);
-                errorBox.style.backgroundColor = '#ef4444'; // Cor vermelha para erro
-            }
-
-            errorBox.innerText = message;
-            errorBox.classList.add('show');
-            setTimeout(() => {
-                errorBox.classList.remove('show');
-                // Opcionalmente, resetar a cor de fundo (Embora o próximo set irá sobrescrever)
-                errorBox.style.backgroundColor = ''; 
-            }, 5000);
-        }
-        
-        /**
-         * Alterna a interface entre Login e Cadastro.
-         */
-        function toggleAuthMode() {
-            isRegistering = !isRegistering;
-            if (isRegistering) {
-                formTitle.innerText = 'Crie sua Conta';
-                nameInput.classList.remove('hidden');
-                authButton.innerText = 'CADASTRAR';
-                toggleLink.innerText = 'Já tem conta? Clique para Entrar';
-            } else {
-                formTitle.innerText = 'Acesse sua Conta';
-                nameInput.classList.add('hidden');
-                authButton.innerText = 'ENTRAR';
-                toggleLink.innerText = 'Ainda não tem conta? Clique para Cadastrar';
-            }
-        }
-        
-        /**
-         * Atualiza o estado da interface (se logado ou não).
-         * @param {Object | null} user - O objeto User do Firebase, ou null.
-         */
-        function updateUI(user) {
-            if (user) {
-                authView.classList.add('hidden');
-                mainView.classList.remove('hidden');
-                // Exibe o nome do usuário (ou 'Usuário' se não houver nome)
-                userNameSpan.innerText = user.displayName || 'Usuário'; 
-                // Aqui você pode começar a carregar o feed de posts
-                console.log('Usuário autenticado:', user.uid, 'Nome:', user.displayName);
-
-            } else {
-                authView.classList.remove('hidden');
-                mainView.classList.add('hidden');
-                // Reseta os campos e habilita o botão após a inicialização
-                emailInput.value = '';
-                passwordInput.value = '';
-                authButton.innerText = isRegistering ? 'CADASTRAR' : 'ENTRAR';
-                authButton.disabled = false;
-            }
-        }
-
-        // --- 4. FUNÇÕES DE AUTENTICAÇÃO ---
-
-        /**
-         * Tenta se registrar no Firebase.
-         */
-        async function handleRegister(email, password, name) {
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-                
-                // 1. Atualizar o nome de exibição no Firebase Auth
-                await updateProfile(user, { displayName: name });
-
-                // 2. Salvar dados adicionais (como o nome) no Firestore
-                // O caminho do Firestore depende do APP ID do ambiente do Canvas
-                const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/profile/info`);
-                await setDoc(userDocRef, { 
-                    name: name,
-                    email: email,
-                    createdAt: new Date() 
-                });
-                
-                displayNotification("Cadastro realizado com sucesso! Bem-vindo(a) ao SocialHub.", true);
-            } catch (error) {
-                authButton.innerText = 'CADASTRAR';
-                authButton.disabled = false;
-                handleAuthError(error, "Cadastro");
-            }
+        function getProfileDocRef(db, userId) {
+            // Path: /artifacts/{appId}/users/{userId}/user_data/profile_doc
+            return doc(db, `artifacts/${appId}/users/${userId}/user_data`, 'profile_doc');
         }
 
         /**
-         * Tenta fazer login no Firebase.
+         * Retorna o URL do avatar com base na primeira letra do nome.
          */
-        async function handleLogin(email, password) {
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                displayNotification("Login realizado com sucesso!", true);
-            } catch (error) {
-                authButton.innerText = 'ENTRAR';
-                authButton.disabled = false;
-                handleAuthError(error, "Login");
-            }
+        function getAvatarUrl(name) {
+             const initial = name ? name[0].toUpperCase() : 'U';
+             return `https://placehold.co/40x40/6366f1/ffffff?text=${initial}`;
         }
         
+        // --- FUNÇÕES DE UTILI DADE ---
+
         /**
-         * Processa e exibe erros de autenticação.
+         * Formata um objeto Date para 'X minutos/horas/dias atrás'.
          */
-        function handleAuthError(error, action) {
-            let userMessage = `Falha no ${action}. Ocorreu um erro desconhecido.`;
+        function formatTimeAgo(date) {
+            if (!(date instanceof Date) || isNaN(date)) return "Tempo desconhecido";
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
             
-            // Mapeamento de erros do Firebase para mensagens amigáveis
-            switch (error.code) {
-                case 'auth/email-already-in-use':
-                    userMessage = 'Este e-mail já está em uso. Tente fazer Login.';
-                    break;
-                case 'auth/invalid-email':
-                    userMessage = 'O formato do e-mail é inválido.';
-                    break;
-                case 'auth/weak-password':
-                    userMessage = 'A senha deve ter pelo menos 6 caracteres.';
-                    break;
-                case 'auth/user-not-found':
-                case 'auth/wrong-password':
-                    userMessage = 'E-mail ou senha inválidos. Verifique suas credenciais.';
-                    break;
-                case 'auth/operation-not-allowed':
-                    // ESTE É O ERRO PERSISTENTE QUE VOCÊ ESTÁ VENDO
-                    userMessage = '🚨 Bloqueio de Configuração (Cache). A solução é RECARREGAR o ambiente! 🔄';
-                    break;
-                default:
-                    console.error("Firebase Error:", error.code, error.message);
-                    userMessage = `Erro Firebase (${action}): ${error.code.replace('auth/', '')}.`;
-                    break;
-            }
-            displayNotification(userMessage); // Chamada para a nova função (isSuccess=false por padrão)
+            if (seconds < 60) return "agora";
+            if (seconds < 3600) return Math.floor(seconds / 60) + "m atrás";
+            if (seconds < 86400) return Math.floor(seconds / 3600) + "h atrás";
+            return Math.floor(seconds / 86400) + "d atrás";
         }
 
-        // --- 5. INICIALIZAÇÃO E LISTENERS ---
+        // --- LÓGICA DE NAVEGAÇÃO ENTRE TELAS ---
 
         /**
-         * Inicializa o Firebase e o processo de autenticação.
+         * Alterna a visualização entre as páginas (Feed, Perfil, Explorar, Alertas).
          */
-        async function initializeAppAndAuth() {
-            try {
-                if (firebaseConfig && firebaseConfig.projectId) {
-                    app = initializeApp(firebaseConfig);
-                    auth = getAuth(app);
-                    db = getFirestore(app);
-                    
-                    // Log para confirmar que o ID corrigido está sendo usado
-                    console.log(`Conectando ao Firebase Project ID: ${firebaseConfig.projectId}`);
+        function renderPage(pageName) {
+            currentPage = pageName;
+            
+            // Alterna a visibilidade das views
+            feedView.classList.toggle('hidden', pageName !== 'feed');
+            profileView.classList.toggle('hidden', pageName !== 'profile');
+            exploreView.classList.toggle('hidden', pageName !== 'explore');
+            alertsView.classList.toggle('hidden', pageName !== 'alerts');
+            
+            // Atualiza o título do cabeçalho e o botão flutuante
+            const titles = {
+                'feed': 'SocialHub',
+                'profile': 'Perfil',
+                'explore': 'Explorar',
+                'alerts': 'Alertas'
+            };
+            headerTitle.textContent = titles[pageName] || 'SocialHub';
+            createPostBtn.classList.toggle('hidden', pageName !== 'feed');
 
-                } else {
-                    throw new Error("Firebase config is null or missing Project ID.");
+            updateNavActiveState();
+        }
+
+        /**
+         * Atualiza o estilo do item de navegação ativo.
+         */
+        function updateNavActiveState() {
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                const linkTarget = item.getAttribute('data-target');
+                const svg = item.querySelector('svg');
+
+                const isActive = linkTarget === currentPage;
+                
+                item.classList.toggle('text-indigo-600', isActive);
+                item.classList.toggle('font-semibold', isActive);
+                item.classList.toggle('text-gray-500', !isActive);
+                item.classList.toggle('font-normal', !isActive);
+
+                // Preenche os ícones 'feed' e 'profile' quando ativos
+                if (svg && (linkTarget === 'feed' || linkTarget === 'profile')) {
+                    svg.setAttribute('fill', isActive ? 'currentColor' : 'none');
+                } else if (svg) {
+                    // Outros ícones (Explorar, Alertas) devem manter fill="none" e usar stroke
+                    svg.setAttribute('fill', 'none');
                 }
+            });
+        }
 
-                // 1. Lógica de Autenticação Inicial com o Token do Canvas (se existir)
+        // --- LÓGICA FIREBASE E DE DADOS ---
+
+        /**
+         * Configura o Firebase e inicia a autenticação.
+         */
+        async function setupFirebase() {
+            try {
+                if (!firebaseConfig) {
+                    console.error("Firebase config is missing.");
+                    return;
+                }
+                
+                // 1. Inicializa o Firebase
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                setLogLevel('debug'); // Logs detalhados
+                
+                // 2. Tenta Autenticar
                 if (initialAuthToken) {
                     await signInWithCustomToken(auth, initialAuthToken);
                 } else {
-                    // Se não houver token, usa login anônimo
                     await signInAnonymously(auth);
                 }
-
-                // 2. Listener para o estado de autenticação (sempre será chamado)
+                
+                // 3. Listener de estado de autenticação
                 onAuthStateChanged(auth, (user) => {
-                    updateUI(user);
+                    if (user) {
+                        userId = user.uid;
+                        console.log("Usuário autenticado. UID:", userId);
+                    } else {
+                        // Gerar ID anônimo se não houver token
+                        userId = 'anon-' + (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 10));
+                        console.warn("Usando ID de usuário anônimo:", userId);
+                    }
+                    
+                    // Atualiza todos os elementos de exibição do ID do usuário
+                    userIdDisplayElements.forEach(el => {
+                        el.textContent = userId.substring(0, 8) + '...';
+                        el.setAttribute('title', userId);
+                    });
+
+                    // Inicia a assinatura dos posts e do perfil
+                    subscribeToPosts();
+                    subscribeToProfile();
                 });
 
             } catch (error) {
-                console.error("Erro na inicialização do Firebase/Auth:", error);
-                displayNotification("Erro crítico de inicialização. Verifique o console.");
-                authButton.innerText = 'ERRO INIT';
+                console.error("Erro ao configurar o Firebase:", error);
             }
         }
-
-        // --- LISTENERS DE EVENTOS ---
-
-        // Inicia o processo de login/cadastro
-        authForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        
+        /**
+         * Assina as postagens em tempo real (onSnapshot).
+         */
+        function subscribeToPosts() {
+            if (!db) {
+                console.error("Firestore não inicializado.");
+                return;
+            }
             
-            const email = emailInput.value.trim();
-            const password = passwordInput.value.trim();
-            const name = nameInput.value.trim();
+            const q = query(collection(db, POSTS_COLLECTION_PATH));
 
-            if (!email || !password || (isRegistering && !name)) {
-                displayNotification("Por favor, preencha todos os campos.");
+            onSnapshot(q, (querySnapshot) => {
+                const fetchedPosts = [];
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    // Converte o timestamp do Firestore para objeto Date
+                    const time = data.time && data.time.toDate ? data.time.toDate() : new Date(); 
+                    
+                    fetchedPosts.push({
+                        id: doc.id,
+                        ...data,
+                        time: time
+                    });
+                });
+                
+                // Ordena por data (mais recente primeiro)
+                postsState = fetchedPosts.sort((a, b) => b.time - a.time);
+                renderFeed();
+                console.log(`Feed atualizado com ${postsState.length} manifestações.`);
+            }, (error) => {
+                console.error("Erro ao assinar posts:", error);
+            });
+        }
+        
+        /**
+         * Assina o documento de perfil do usuário.
+         */
+        function subscribeToProfile() {
+            if (!db || userId === 'loading') return;
+
+            const profileRef = getProfileDocRef(db, userId);
+
+            onSnapshot(profileRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    userName = data.name || 'Manifestador da Luz';
+                    userBio = data.bio || "Ancorando a visão, co-criando a realidade. Buscador da luz-evolução.";
+                } else {
+                    // Documento não existe, usa defaults.
+                    userName = 'Manifestador da Luz';
+                    userBio = "Ancorando a visão, co-criando a realidade. Buscador da luz-evolução.";
+                }
+                renderProfileView();
+                updatePostModalAuthorDisplay();
+            }, (error) => {
+                console.error("Erro ao assinar perfil:", error);
+            });
+        }
+        
+        /**
+         * Salva uma nova manifestação no Firestore.
+         * @param {object} postData - { content: string }
+         */
+        async function savePost(postData) {
+            if (!db || userId === 'loading') {
+                console.error("Aguardando inicialização do Firebase/Auth.");
                 return;
             }
 
-            authButton.disabled = true;
-            authButton.innerText = isRegistering ? 'CADASTRANDO...' : 'ENTRANDO...';
+            const avatarUrl = getAvatarUrl(userName);
 
-            if (isRegistering) {
-                await handleRegister(email, password, name);
-            } else {
-                await handleLogin(email, password);
-            }
-        });
+            const newPost = {
+                content: postData.content,
+                authorId: userId,
+                authorName: userName, // Usa o nome personalizado do perfil
+                authorPhoto: avatarUrl,
+                time: new Date(), 
+                likes: 0,
+                comments: 0,
+                shared: 0,
+                likedBy: [], // UIDs de quem curtiu
+                mediaUrl: null,
+            };
 
-        // Alterna entre Entrar e Cadastrar
-        toggleLink.addEventListener('click', toggleAuthMode);
-        
-        // Botão de Sair
-        logoutButton.addEventListener('click', async () => {
             try {
-                await signOut(auth);
-                displayNotification("Sessão encerrada com sucesso.", true);
-            } catch (error) {
-                displayNotification("Falha ao sair. Tente novamente.");
+                await addDoc(collection(db, POSTS_COLLECTION_PATH), newPost);
+                console.log("Manifestação salva.");
+            } catch (e) {
+                console.error("Erro ao adicionar manifestação:", e);
             }
-        });
-
-        // Inicializa o aplicativo
-        initializeAppAndAuth();
+        }
         
+        /**
+         * Lida com o clique de curtir/ressonar e atualiza o Firestore.
+         */
+        async function toggleLike(postId) {
+            if (!db || userId === 'loading') {
+                 console.warn("Aguardando Firebase/Auth para curtir.");
+                 return;
+            }
+            
+            const post = postsState.find(p => p.id === postId);
+            if (!post) return;
+            
+            const postRef = doc(db, POSTS_COLLECTION_PATH, postId);
+            const isLiked = post.likedBy.includes(userId);
+            
+            let newLikedBy = [...post.likedBy];
+            let newLikes;
+
+            if (isLiked) {
+                // Descurtir
+                newLikedBy = newLikedBy.filter(uid => uid !== userId);
+                newLikes = post.likes - 1;
+            } else {
+                // Curtir
+                newLikedBy.push(userId);
+                newLikes = post.likes + 1;
+            }
+
+            try {
+                await updateDoc(postRef, {
+                    likes: newLikes,
+                    likedBy: newLikedBy
+                });
+                // O UI será atualizado automaticamente pelo onSnapshot
+            } catch (e) {
+                console.error("Erro ao atualizar ressonância:", e);
+            }
+        }
+        
+        /**
+         * Salva os dados de nome e bio do perfil no Firestore.
+         */
+        async function saveProfileData(name, bio) {
+            if (!db || userId === 'loading') {
+                console.error("Aguardando inicialização do Firebase/Auth para salvar perfil.");
+                return;
+            }
+            
+            const profileRef = getProfileDocRef(db, userId);
+            
+            try {
+                await setDoc(profileRef, {
+                    name: name,
+                    bio: bio
+                }, { merge: true }); // setDoc com merge cria ou atualiza o documento
+                console.log("Perfil atualizado com sucesso.");
+                closeEditProfileModal();
+            } catch (e) {
+                console.error("Erro ao salvar perfil:", e);
+            }
+        }
+
+        // --- FUNÇÕES DE RENDERIZAÇÃO DE UI ---
+
+        /**
+         * Atualiza os elementos visuais do perfil.
+         */
+        function renderProfileView() {
+            const avatarUrl = getAvatarUrl(userName);
+            
+            if (profileNameEl) profileNameEl.textContent = userName;
+            if (profileBioEl) profileBioEl.textContent = userBio;
+            if (headerProfileImg) headerProfileImg.src = avatarUrl;
+            if (profileAvatarImg) profileAvatarImg.src = avatarUrl;
+        }
+
+        /**
+         * Atualiza o display de nome/avatar no modal de postagem.
+         */
+        function updatePostModalAuthorDisplay() {
+            const avatarUrl = getAvatarUrl(userName);
+            if (postModalAuthorName) postModalAuthorName.textContent = userName + ' (Você)';
+            if (postModalAvatarImg) postModalAvatarImg.src = avatarUrl;
+        }
+
+        function createPostHtml(post) {
+            const mediaHtml = post.mediaUrl 
+                ? `<div class="mt-4 rounded-xl overflow-hidden border border-gray-100">
+                    <img src="${post.mediaUrl}" 
+                         onerror="this.onerror=null;this.src='https://placehold.co/600x400/9ca3af/ffffff?text=Media+Indisponível'"
+                         alt="Conteúdo da Postagem" class="w-full h-auto object-cover">
+                   </div>`
+                : '';
+
+            const isLiked = post.likedBy.includes(userId);
+            const iconClass = isLiked ? 'fill="var(--primary-color)" class="text-indigo-600"' : 'fill="none" class="text-gray-500"';
+            const timeAgo = formatTimeAgo(post.time);
+            
+            return `
+                <div id="post-${post.id}" class="post-card rounded-xl p-4 sm:p-6 transition duration-150 hover:shadow-lg">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <img src="${post.authorPhoto}" alt="${post.authorName}" class="w-10 h-10 rounded-full object-cover border-2 border-gray-200">
+                            <div class="ml-3">
+                                <span class="block text-base font-semibold text-gray-800">${post.authorName}</span>
+                                <span class="block text-xs text-gray-500">${timeAgo}</span>
+                            </div>
+                        </div>
+                        <button class="text-gray-400 hover:text-gray-700 p-1 rounded-full transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                        </button>
+                    </div>
+
+                    <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">${post.content}</p>
+                    ${mediaHtml}
+
+                    <div class="flex items-center text-sm text-gray-500 mt-4 border-t border-gray-100 pt-3">
+                        <span class="mr-4">${post.likes} Ressonâncias</span>
+                        <span class="mr-4">${post.comments} Comentários</span>
+                        <span>${post.shared} Compartilhamentos</span>
+                    </div>
+
+                    <div class="flex justify-around border-t border-gray-100 pt-3 mt-3">
+                        <button class="btn-interact flex items-center p-2 rounded-lg ${isLiked ? 'text-indigo-600' : 'text-gray-500'}" onclick="toggleLike('${post.id}')">
+                            <svg id="like-icon-${post.id}" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" ${iconClass} stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                            <span class="ml-2 hidden sm:inline">Ressonar</span>
+                        </button>
+                        <button class="btn-interact flex items-center p-2 rounded-lg text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.8 2h8.4A1.8 1.8 0 0 1 18 3.8v8.4A1.8 1.8 0 0 1 16.2 14H14l-4 4-4-4H5.8A1.8 1.8 0 0 1 4 12.2V3.8A1.8 1.8 0 0 1 5.8 2z"/></svg>
+                            <span class="ml-2 hidden sm:inline">Comentar</span>
+                        </button>
+                        <button class="btn-interact flex items-center p-2 rounded-lg text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
+                            <span class="ml-2 hidden sm:inline">Compartilhar</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderFeed() {
+            if (feedContainer) {
+                if (postsState.length === 0) {
+                     feedContainer.innerHTML = `
+                        <div class="text-center post-card p-6 rounded-xl text-gray-500">
+                            <p class="mb-2">Ainda não há manifestações no fluxo.</p>
+                            <p class="font-semibold text-indigo-500">Seja o primeiro a co-criar!</p>
+                        </div>
+                     `;
+                     return;
+                }
+                feedContainer.innerHTML = postsState.map(createPostHtml).join('');
+            }
+        }
+
+        // --- LÓGICA DO MODAL DE POSTAGEM ---
+        function openPostModal() {
+            if(currentPage !== 'feed') return;
+            createPostModal.classList.remove('opacity-0', 'pointer-events-none');
+            createPostModal.querySelector('div').classList.remove('scale-95');
+            document.body.classList.add('modal-open'); 
+            setTimeout(() => postContentInput.focus(), 300); 
+        }
+
+        function closePostModal() {
+            createPostModal.querySelector('div').classList.add('scale-95');
+            setTimeout(() => {
+                createPostModal.classList.add('opacity-0', 'pointer-events-none');
+            }, 100); 
+            document.body.classList.remove('modal-open');
+            postContentInput.value = ''; 
+        }
+
+        function handlePostSubmit(event) {
+            event.preventDefault();
+            const content = postContentInput.value.trim();
+
+            if (content.length < 5) {
+                console.error("Manifestação muito curta. Mínimo de 5 caracteres.");
+                return; 
+            }
+            
+            savePost({ content: content });
+            closePostModal();
+        }
+        
+        // --- LÓGICA DO MODAL DE EDIÇÃO DE PERFIL ---
+        
+        function openEditProfileModal() {
+            // Preenche o formulário com os dados atuais
+            editProfileNameInput.value = userName;
+            editProfileBioInput.value = userBio;
+
+            editProfileModal.classList.remove('opacity-0', 'pointer-events-none');
+            editProfileModal.querySelector('div').classList.remove('scale-95');
+            document.body.classList.add('modal-open'); 
+            setTimeout(() => editProfileNameInput.focus(), 300); 
+        }
+
+        function closeEditProfileModal() {
+            editProfileModal.querySelector('div').classList.add('scale-95');
+            setTimeout(() => {
+                editProfileModal.classList.add('opacity-0', 'pointer-events-none');
+            }, 100); 
+            document.body.classList.remove('modal-open');
+        }
+        
+        function handleProfileSubmit(event) {
+            event.preventDefault();
+            const newName = editProfileNameInput.value.trim();
+            const newBio = editProfileBioInput.value.trim();
+
+            if (newName.length < 3) {
+                console.error("Nome muito curto.");
+                return;
+            }
+            
+            saveProfileData(newName, newBio);
+        }
+
+        // --- EVENT LISTENERS E INICIALIZAÇÃO ---
+        createPostBtn.addEventListener('click', openPostModal);
+        newPostForm.addEventListener('submit', handlePostSubmit);
+        editProfileForm.addEventListener('submit', handleProfileSubmit); // Novo listener para o formulário de perfil
+
+        // Inicializa o Firebase e o App
+        window.onload = () => {
+            setupFirebase();
+            renderPage('feed'); // Define a página inicial
+        };
+        
+        // Expondo as funções para o HTML
+        window.toggleLike = toggleLike;
+        window.openPostModal = openPostModal;
+        window.closePostModal = closePostModal;
+        window.openEditProfileModal = openEditProfileModal; // Novo
+        window.closeEditProfileModal = closeEditProfileModal; // Novo
+        window.renderPage = renderPage;
+
     </script>
+
 </body>
 </html>
+
+
+
+
+
+Com manifestações
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SocialHub - Feed Avançado e Comentários</title>
+    <!-- Carregando Tailwind CSS para um design moderno e responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #6366f1; /* Indigo 500 */
+            --primary-dark: #4f46e5;  /* Indigo 600 */
+            --text-primary: #1f2937;  /* Gray 800 */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            padding-top: 64px; /* Espaço para o header fixo */
+        }
+        .header-bg {
+            background-color: white;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        .post-card {
+            background-color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn-interact {
+            transition: color 0.1s ease-in-out, background-color 0.1s ease-in-out;
+        }
+        .btn-interact:hover {
+            color: var(--primary-color);
+        }
+        .btn-create {
+            background-color: var(--primary-color);
+            transition: transform 0.1s ease-in-out, opacity 0.1s ease-in-out;
+        }
+        .btn-create:hover {
+            background-color: var(--primary-dark);
+            transform: scale(1.05);
+        }
+        .modal-open {
+            overflow: hidden; 
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 4px;
+            transition: color 0.1s;
+        }
+        .nav-item:hover {
+            color: var(--primary-dark);
+        }
+        /* Estilo para links de usuário */
+        .user-id-link {
+            text-decoration: underline;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Cabeçalho Fixo (Mobile First) -->
+    <header class="fixed top-0 left-0 w-full header-bg z-40">
+        <div class="max-w-xl mx-auto flex justify-between items-center p-3">
+            <h1 id="header-title" class="text-2xl font-extrabold text-indigo-600">SocialHub</h1>
+            <div class="flex items-center space-x-3">
+                <!-- Ícone de Notificações/Mensagens -->
+                <button class="p-2 rounded-full text-gray-500 hover:text-indigo-600 transition" onclick="renderPage('alerts')">
+                    <!-- SVG para Alertas -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                </button>
+                <!-- Foto de Perfil (Simulação) - CLICÁVEL -->
+                <button onclick="renderPage('profile')" aria-label="Abrir Perfil">
+                    <img id="header-profile-img" src="https://placehold.co/36x36/6366f1/ffffff?text=U" alt="Perfil" class="w-9 h-9 object-cover rounded-full border-2 border-indigo-500">
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Container Principal do Conteúdo -->
+    <main id="main-content-wrapper" class="max-w-xl mx-auto p-4 space-y-4 pb-20 sm:pb-4">
+        
+        <!-- Botão Flutuante para Criar Postagem (FAB) - Visível apenas no Feed -->
+        <button id="create-post-btn" class="fixed bottom-20 right-4 btn-create p-4 rounded-full text-white shadow-xl z-20" aria-label="Criar Nova Postagem">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+
+        <!-- ============================== -->
+        <!-- 1. VISÃO DO FEED -->
+        <!-- ============================== -->
+        <div id="feed-view">
+            <!-- Mock de Criação Rápida de Post -->
+            <div class="post-card p-4 rounded-xl">
+                <p class="text-gray-500 mb-2">O que você está co-criando hoje?</p>
+                <input type="text" placeholder="Compartilhe seu pensamento..." 
+                       class="w-full p-3 border border-gray-200 rounded-lg text-sm focus:border-indigo-500 focus:outline-none transition cursor-pointer"
+                       onclick="openPostModal()" readonly>
+                <div class="flex justify-end mt-3">
+                     <button class="text-xs text-indigo-600 hover:text-indigo-800 font-medium py-1 px-3 rounded-lg transition" onclick="openPostModal()">
+                        Manifestar
+                    </button>
+                </div>
+            </div>
+            <div class="text-xs text-gray-400 text-center py-2">
+                ID do Usuário: <span id="display-user-id" class="current-user-id font-mono">Carregando...</span>
+            </div>
+            
+            <!-- Controles de Filtragem e Classificação (NOVO) -->
+            <div class="flex justify-between items-center mb-4 mt-2">
+                <p class="text-sm font-semibold text-gray-700">Fluxo de Manifestações</p>
+                <div class="flex space-x-2 text-sm">
+                    <button id="sort-recent" onclick="setSortOrder('time')" class="px-3 py-1 rounded-full font-medium transition" data-sort="time">
+                        Mais Recente
+                    </button>
+                    <button id="sort-likes" onclick="setSortOrder('likes')" class="px-3 py-1 rounded-full font-medium transition" data-sort="likes">
+                        Mais Ressonante
+                    </button>
+                </div>
+            </div>
+
+            <!-- Div para Inserir Postagens Dinamicamente -->
+            <div id="feed-container" class="space-y-6">
+                <!-- As postagens serão injetadas aqui pelo Firestore onSnapshot -->
+                <p class="text-center text-gray-500 pt-8">Conectando ao Fluxo de Dados...</p>
+            </div>
+        </div>
+
+        <!-- ============================== -->
+        <!-- 2. VISÃO DO PERFIL -->
+        <!-- ============================== -->
+        <div id="profile-view" class="hidden">
+            <!-- Conteúdo do Perfil -->
+            <div class="relative bg-indigo-700 h-40 rounded-xl overflow-hidden shadow-lg">
+                <img src="https://placehold.co/600x160/4f46e5/e0e7ff?text=Campo+de+Energia+Manifestada" 
+                     alt="Banner do Perfil" 
+                     class="w-full h-full object-cover opacity-80">
+            </div>
+            
+            <div class="post-card -mt-16 pt-4 rounded-xl">
+                <div class="flex flex-col items-center px-4">
+                    <img id="profile-avatar-img" src="https://placehold.co/120x120/6366f1/ffffff?text=U" 
+                         alt="Avatar do Usuário" 
+                         class="w-24 h-24 object-cover rounded-full border-4 border-white shadow-xl">
+                    
+                    <h2 id="profile-name" class="text-2xl font-bold text-gray-900 mt-3">Manifestador da Luz</h2>
+                    <p class="text-sm text-indigo-600 font-medium current-user-id" id="display-user-id-profile">Carregando...</p>
+                    <p id="profile-bio" class="text-gray-600 text-center mt-2 px-4 italic text-sm">
+                        "Ancorando a visão, co-criando a realidade. Buscador da luz-evolução."
+                    </p>
+
+                    <div class="flex justify-around w-full mt-4 border-t border-gray-100 pt-4">
+                        <div class="text-center">
+                            <span class="block text-xl font-bold text-gray-800" id="profile-manifestations-count">0</span>
+                            <span class="block text-sm text-gray-500">Manifestações</span>
+                        </div>
+                        <div class="text-center">
+                            <span class="block text-xl font-bold text-gray-800">1.2K</span>
+                            <span class="block text-sm text-gray-500">Conexões</span>
+                        </div>
+                        <div class="text-center">
+                            <span class="block text-xl font-bold text-gray-800">720</span>
+                            <span class="block text-sm text-gray-500">Ressonâncias</span>
+                        </div>
+                    </div>
+
+                    <button id="profile-edit-btn" onclick="openEditProfileModal()" class="w-full mt-4 bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold py-2 rounded-full transition">
+                        Editar Perfil
+                    </button>
+                </div>
+                
+                <div class="flex border-t border-gray-100 mt-6 pt-4">
+                    <button class="flex-1 text-center py-2 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600">
+                        Manifestações
+                    </button>
+                    <button class="flex-1 text-center py-2 text-sm font-medium text-gray-500 hover:text-indigo-600 transition">
+                        Galeria
+                    </button>
+                </div>
+
+                <div class="text-center text-gray-400 p-8">
+                    Suas manifestações aparecerão aqui. (Ainda não implementado, use a aba Feed)
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================== -->
+        <!-- 3. VISÃO DO EXPLORAR -->
+        <!-- ============================== -->
+        <div id="explore-view" class="hidden">
+            <!-- Conteúdo do Explorar (Mock) -->
+            <div class="mb-6">
+                <input type="search" placeholder="Buscar manifestações, usuários ou interesses..."
+                       class="w-full p-3 border border-gray-300 rounded-full text-base focus:border-indigo-500 focus:outline-none transition"
+                       aria-label="Buscar">
+            </div>
+
+            <div class="post-card p-4 rounded-xl mb-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mr-2 text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5h4L17 5zM3 5h4L3 5zM12 11h7l-5 5-5-5zM5 19h7l-5-5-5 5z"/></svg>
+                    Tendências de Luz ✨
+                </h3>
+                <div class="space-y-2">
+                    <a href="#" class="block text-indigo-600 hover:text-indigo-800 transition">#LuzEvolução <span class="text-gray-500 ml-2 text-sm">(+1.5K)</span></a>
+                    <a href="#" class="block text-indigo-600 hover:text-indigo-800 transition">#NexusCriativo <span class="text-gray-500 ml-2 text-sm">(+890)</span></a>
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                 <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mr-2 text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Visões em Destaque
+                </h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="aspect-square bg-gray-300 rounded-xl overflow-hidden shadow-md relative group cursor-pointer explore-highlight">
+                        <img src="https://placehold.co/400x400/34d399/ffffff?text=Design+de+Futuro" alt="Postagem em Destaque" class="w-full h-full object-cover transition duration-300 group-hover:scale-105">
+                        <div class="absolute inset-0 bg-black bg-opacity-30 flex items-end p-3 opacity-0 group-hover:opacity-100 transition duration-300">
+                            <span class="text-white text-xs font-medium truncate">#ManifestoIA</span>
+                        </div>
+                    </div>
+                    <div class="aspect-square bg-gray-300 rounded-xl overflow-hidden shadow-md relative group cursor-pointer explore-highlight">
+                        <img src="https://placehold.co/400x400/fcd34d/1f2937?text=Arte+Vibracional" alt="Postagem em Destaque" class="w-full h-full object-cover transition duration-300 group-hover:scale-105">
+                        <div class="absolute inset-0 bg-black bg-opacity-30 flex items-end p-3 opacity-0 group-hover:opacity-100 transition duration-300">
+                            <span class="text-white text-xs font-medium truncate">Co-Criação_Mútua</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================== -->
+        <!-- 4. VISÃO DOS ALERTAS (ATIVIDADE DO USUÁRIO) -->
+        <!-- ============================== -->
+        <div id="alerts-view" class="hidden">
+            <h2 class="text-2xl font-extrabold text-gray-800 mb-6">Suas Frequências Resonantes</h2>
+            
+            <div id="user-activity-container" class="space-y-4">
+                <!-- O conteúdo dinâmico será injetado aqui -->
+                <p class="text-center text-gray-500 pt-4 text-sm">Carregando sua atividade...</p>
+            </div>
+        </div>
+        <!-- FIM DA VISÃO DOS ALERTAS -->
+
+    </main>
+    
+    <!-- MODAL DE CRIAÇÃO DE POSTAGEM -->
+    <div id="create-post-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300" onclick="closePostModal()">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg m-4 transform scale-95 transition-transform duration-300" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center border-b p-4 sm:p-5">
+                <h2 class="text-xl font-bold text-gray-800">Co-crie uma Manifestação ✨</h2>
+                <button onclick="closePostModal()" class="text-gray-400 hover:text-gray-700 p-2 rounded-full transition" aria-label="Fechar Modal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <form id="new-post-form" class="p-4 sm:p-5">
+                <div class="flex items-center mb-4">
+                    <img id="post-modal-avatar-img" src="https://placehold.co/40x40/6366f1/ffffff?text=U" alt="Seu Perfil" class="w-10 h-10 object-cover rounded-full border-2 border-indigo-500">
+                    <div class="ml-3">
+                        <span id="post-modal-author-name" class="block text-sm font-semibold text-gray-800">Manifestador (Você)</span>
+                        <span class="block text-xs text-gray-500 current-user-id">Carregando...</span>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <textarea id="post-content" required rows="5" 
+                              class="w-full p-3 text-lg border border-gray-200 rounded-xl resize-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none transition" 
+                              placeholder="Compartilhe sua nova ideia, visão ou descoberta para o fluxo de energia da comunidade..."></textarea>
+                </div>
+                <div class="flex justify-between items-center border-t border-gray-100 pt-3">
+                    <button type="button" class="flex items-center text-gray-500 hover:text-indigo-600 transition p-2 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        <span class="ml-2 hidden sm:inline text-sm font-medium">Foto/Vídeo</span>
+                    </button>
+                    <button type="submit" class="btn-create text-white font-bold py-2 px-6 rounded-lg shadow-md uppercase tracking-wide text-sm">
+                        Manifestar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- FIM DO MODAL DE CRIAÇÃO -->
+    
+    <!-- MODAL DE EDIÇÃO DE PERFIL -->
+    <div id="edit-profile-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300" onclick="closeEditProfileModal()">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg m-4 transform scale-95 transition-transform duration-300" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center border-b p-4 sm:p-5">
+                <h2 class="text-xl font-bold text-gray-800">Ajustar Perfil</h2>
+                <button onclick="closeEditProfileModal()" class="text-gray-400 hover:text-gray-700 p-2 rounded-full transition" aria-label="Fechar Modal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <form id="edit-profile-form" class="p-4 sm:p-5">
+                <div class="mb-4">
+                    <label for="edit-profile-name" class="block text-sm font-medium text-gray-700 mb-1">Nome de Co-Criação</label>
+                    <input type="text" id="edit-profile-name" required maxlength="50"
+                           class="w-full p-3 border border-gray-200 rounded-lg text-base focus:border-indigo-500 focus:outline-none transition" 
+                           placeholder="Seu nome no SocialHub">
+                </div>
+                <div class="mb-4">
+                    <label for="edit-profile-bio" class="block text-sm font-medium text-gray-700 mb-1">Bio/Ancoragem de Propósito</label>
+                    <textarea id="edit-profile-bio" rows="4" maxlength="160"
+                              class="w-full p-3 border border-gray-200 rounded-lg resize-none focus:border-indigo-500 focus:outline-none transition" 
+                              placeholder="Fale um pouco sobre sua jornada e suas manifestações. Máximo 160 caracteres."></textarea>
+                </div>
+                
+                <div class="flex justify-end border-t border-gray-100 pt-3">
+                    <button type="submit" class="btn-create text-white font-bold py-2 px-6 rounded-lg shadow-md uppercase tracking-wide text-sm">
+                        Salvar Ajustes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- FIM DO MODAL DE EDIÇÃO DE PERFIL -->
+    
+    <!-- MODAL DE COMENTÁRIOS (NOVO) -->
+    <div id="comments-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300" onclick="closeCommentModal()">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg m-4 h-full max-h-[90vh] flex flex-col transform scale-95 transition-transform duration-300" onclick="event.stopPropagation()">
+            <div class="flex-shrink-0 flex justify-between items-center border-b p-4 sm:p-5">
+                <h2 class="text-xl font-bold text-gray-800">Ressonância e Comentários</h2>
+                <button onclick="closeCommentModal()" class="text-gray-400 hover:text-gray-700 p-2 rounded-full transition" aria-label="Fechar Modal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            
+            <!-- Container de Comentários (Scrollable) -->
+            <div id="comments-container" class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+                <p class="text-center text-gray-500">Carregando comentários...</p>
+            </div>
+            
+            <!-- Formulário de Novo Comentário (Fixo na parte inferior) -->
+            <form id="new-comment-form" class="flex-shrink-0 border-t border-gray-100 p-4 sm:p-5">
+                <div class="flex items-center space-x-3">
+                    <input type="text" id="comment-content" required 
+                           class="flex-1 p-3 border border-gray-200 rounded-full focus:border-indigo-500 focus:outline-none transition" 
+                           placeholder="Envie sua frequência de resposta..." maxlength="150">
+                    <button type="submit" class="btn-create text-white font-bold py-2 px-4 rounded-full text-sm">
+                        Enviar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- FIM DO MODAL DE COMENTÁRIOS -->
+
+    <!-- NAVEGAÇÃO INFERIOR FIXA (MOBILE) -->
+    <nav class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 z-30 sm:hidden shadow-xl">
+        <div class="flex justify-around items-center h-16 max-w-xl mx-auto">
+            
+            <!-- Feed/Home (Ativo) -->
+            <a href="#" class="nav-item text-indigo-600 font-semibold" data-target="feed" onclick="event.preventDefault(); renderPage('feed')">
+                <svg id="nav-icon-feed" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55v7.45a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7.45"/><path d="M12 2l-8 8h16z"/></svg>
+                <span class="text-xs mt-1">Feed</span>
+            </a>
+            
+            <!-- Busca/Explore -->
+            <a href="#" class="nav-item text-gray-500 font-normal hover:text-indigo-600" data-target="explore" onclick="event.preventDefault(); renderPage('explore')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <span class="text-xs mt-1">Explorar</span>
+            </a>
+            
+            <!-- Alertas/Notificações -->
+            <a href="#" class="nav-item text-gray-500 font-normal hover:text-indigo-600" data-target="alerts" onclick="event.preventDefault(); renderPage('alerts')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                <span class="text-xs mt-1">Alertas</span>
+            </a>
+            
+            <!-- Perfil -->
+            <a href="#" class="nav-item text-gray-500 font-normal hover:text-indigo-600" data-target="profile" onclick="event.preventDefault(); renderPage('profile')">
+                <svg id="nav-icon-profile" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span class="text-xs mt-1">Perfil</span>
+            </a>
+        </div>
+    </nav>
+    <!-- FIM DA NAVEGAÇÃO INFERIOR -->
+
+    <!-- Lógica JavaScript e Firebase -->
+    <script type="module">
+        // Importações do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, addDoc, updateDoc, onSnapshot, collection, query, where, orderBy, setLogLevel, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Variáveis globais para Firebase e Estado
+        let app, db, auth;
+        let userId = 'loading'; // ID do usuário autenticado
+        let postsState = []; // Estado global para todas as postagens
+        let userPostsState = []; // Estado global para postagens do usuário logado
+        let currentPostIdForComments = null; // Para o modal de comentários
+        
+        // Estado de Perfil do Usuário
+        let userName = 'Manifestador da Luz';
+        let userBio = "Ancorando a visão, co-criando a realidade. Buscador da luz-evolução.";
+        let sortOrder = 'time'; // 'time' (Mais Recente) ou 'likes' (Mais Ressonante)
+        
+        // Constantes do ambiente (fornecidas pela Canvas)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // Caminho de coleção para dados públicos (visíveis para todos)
+        const POSTS_COLLECTION_PATH = `artifacts/${appId}/public/data/posts`;
+        
+        // Elementos do DOM
+        const feedContainer = document.getElementById('feed-container');
+        const createPostModal = document.getElementById('create-post-modal');
+        const newPostForm = document.getElementById('new-post-form');
+        const postContentInput = document.getElementById('post-content');
+        const feedView = document.getElementById('feed-view');
+        const profileView = document.getElementById('profile-view');
+        const exploreView = document.getElementById('explore-view');
+        const alertsView = document.getElementById('alerts-view');
+        const userActivityContainer = document.getElementById('user-activity-container');
+        const headerTitle = document.getElementById('header-title');
+        const userIdDisplayElements = document.querySelectorAll('.current-user-id');
+        
+        // Elementos do Perfil
+        const profileNameEl = document.getElementById('profile-name');
+        const profileBioEl = document.getElementById('profile-bio');
+        const editProfileModal = document.getElementById('edit-profile-modal');
+        const editProfileForm = document.getElementById('edit-profile-form');
+        const editProfileNameInput = document.getElementById('edit-profile-name');
+        const editProfileBioInput = document.getElementById('edit-profile-bio');
+        const headerProfileImg = document.getElementById('header-profile-img');
+        const profileAvatarImg = document.getElementById('profile-avatar-img');
+        const postModalAuthorName = document.getElementById('post-modal-author-name');
+        const profileManifestationsCount = document.getElementById('profile-manifestations-count');
+        
+        // Elementos do Comentário
+        const commentsModal = document.getElementById('comments-modal');
+        const commentsContainer = document.getElementById('comments-container');
+        const newCommentForm = document.getElementById('new-comment-form');
+        const commentContentInput = document.getElementById('comment-content');
+
+        let currentPage = 'feed';
+
+        // --- UTILS E CAMINHOS DE REFERÊNCIA ---
+
+        /**
+         * Retorna a referência para o documento de perfil privado do usuário.
+         */
+        function getProfileDocRef(db, userId) {
+            // Path: /artifacts/{appId}/users/{userId}/user_data/profile_doc
+            return doc(db, `artifacts/${appId}/users/${userId}/user_data`, 'profile_doc');
+        }
+
+        /**
+         * Retorna o URL do avatar com base na primeira letra do nome.
+         */
+        function getAvatarUrl(name) {
+             const initial = name ? name[0].toUpperCase() : 'U';
+             return `https://placehold.co/40x40/6366f1/ffffff?text=${initial}`;
+        }
+        
+        /**
+         * Formata um objeto Date para 'X minutos/horas/dias atrás'.
+         */
+        function formatTimeAgo(date) {
+            if (!(date instanceof Date) || isNaN(date)) return "Tempo desconhecido";
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+            
+            if (seconds < 60) return "agora";
+            if (seconds < 3600) return Math.floor(seconds / 60) + "m atrás";
+            if (seconds < 86400) return Math.floor(seconds / 3600) + "h atrás";
+            return Math.floor(seconds / 86400) + "d atrás";
+        }
+
+        // --- LÓGICA DE NAVEGAÇÃO E FILTRAGEM ---
+
+        function renderPage(pageName) {
+            currentPage = pageName;
+            
+            // Alterna a visibilidade das views
+            feedView.classList.toggle('hidden', pageName !== 'feed');
+            profileView.classList.toggle('hidden', pageName !== 'profile');
+            exploreView.classList.toggle('hidden', pageName !== 'explore');
+            alertsView.classList.toggle('hidden', pageName !== 'alerts');
+            
+            // Lógica de Renderização Específica
+            if (pageName === 'alerts') {
+                renderAlertsView(); // Chama a função que renderiza a atividade do usuário
+            }
+            if (pageName === 'profile') {
+                renderProfileView();
+            }
+
+            const titles = {
+                'feed': 'SocialHub',
+                'profile': 'Perfil',
+                'explore': 'Explorar',
+                'alerts': 'Alertas'
+            };
+            headerTitle.textContent = titles[pageName] || 'SocialHub';
+            document.getElementById('create-post-btn').classList.toggle('hidden', pageName !== 'feed');
+
+            updateNavActiveState();
+        }
+
+        /**
+         * Define a ordem de classificação do feed e renderiza novamente.
+         */
+        function setSortOrder(newOrder) {
+            sortOrder = newOrder;
+            updateSortButtonStyles();
+            renderFeed();
+        }
+        
+        /**
+         * Atualiza os estilos dos botões de filtro.
+         */
+        function updateSortButtonStyles() {
+            document.querySelectorAll('[data-sort]').forEach(button => {
+                const isSelected = button.getAttribute('data-sort') === sortOrder;
+                button.classList.toggle('bg-indigo-500', isSelected);
+                button.classList.toggle('text-white', isSelected);
+                button.classList.toggle('bg-gray-200', !isSelected);
+                button.classList.toggle('text-gray-700', !isSelected);
+            });
+        }
+
+        function updateNavActiveState() {
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                const linkTarget = item.getAttribute('data-target');
+                const svg = item.querySelector('svg');
+
+                const isActive = linkTarget === currentPage;
+                
+                item.classList.toggle('text-indigo-600', isActive);
+                item.classList.toggle('font-semibold', isActive);
+                item.classList.toggle('text-gray-500', !isActive);
+                item.classList.toggle('font-normal', !isActive);
+
+                if (svg && (linkTarget === 'feed' || linkTarget === 'profile')) {
+                    svg.setAttribute('fill', isActive ? 'currentColor' : 'none');
+                } else if (svg) {
+                    svg.setAttribute('fill', 'none');
+                }
+            });
+        }
+
+        // --- LÓGICA FIREBASE E DE DADOS ---
+
+        async function setupFirebase() {
+            try {
+                if (!firebaseConfig) {
+                    console.error("Firebase config is missing.");
+                    return;
+                }
+                
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                setLogLevel('debug'); 
+                
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                    } else {
+                        userId = 'anon-' + (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 10));
+                        console.warn("Usando ID de usuário anônimo:", userId);
+                    }
+                    
+                    userIdDisplayElements.forEach(el => {
+                        el.textContent = userId.substring(0, 8) + '...';
+                        el.setAttribute('title', userId);
+                    });
+
+                    subscribeToPosts();
+                    subscribeToProfile();
+                    updateSortButtonStyles();
+                });
+
+            } catch (error) {
+                console.error("Erro ao configurar o Firebase:", error);
+            }
+        }
+        
+        /**
+         * Assina as postagens em tempo real e as classifica.
+         */
+        function subscribeToPosts() {
+            if (!db) return;
+            
+            // Firestore Query: Busca todos os posts (não ordenamos aqui para evitar erro de índice ausente)
+            const q = query(collection(db, POSTS_COLLECTION_PATH));
+
+            onSnapshot(q, (querySnapshot) => {
+                const fetchedPosts = [];
+                const fetchedUserPosts = [];
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const time = data.time && data.time.toDate ? data.time.toDate() : new Date(); 
+                    const post = { id: doc.id, ...data, time: time };
+                    
+                    fetchedPosts.push(post);
+                    if (post.authorId === userId) {
+                        fetchedUserPosts.push(post);
+                    }
+                });
+                
+                postsState = fetchedPosts;
+                userPostsState = fetchedUserPosts;
+                
+                renderFeed();
+                renderProfileView(); // Atualiza contagem de manifestações
+                if (currentPage === 'alerts') {
+                    renderAlertsView(); // Atualiza a visão de atividade
+                }
+            }, (error) => {
+                console.error("Erro ao assinar posts:", error);
+            });
+        }
+        
+        /**
+         * Assina o documento de perfil do usuário.
+         */
+        function subscribeToProfile() {
+            if (!db || userId === 'loading') return;
+
+            const profileRef = getProfileDocRef(db, userId);
+
+            onSnapshot(profileRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    userName = data.name || 'Manifestador da Luz';
+                    userBio = data.bio || "Ancorando a visão, co-criando a realidade. Buscador da luz-evolução.";
+                } else {
+                    userName = 'Manifestador da Luz';
+                    userBio = "Ancorando a visão, co-criando a realidade. Buscador da luz-evolução.";
+                }
+                renderProfileView();
+                updatePostModalAuthorDisplay();
+            }, (error) => {
+                console.error("Erro ao assinar perfil:", error);
+            });
+        }
+        
+        /**
+         * Salva uma nova manifestação (post) no Firestore.
+         */
+        async function savePost(postData) {
+            if (!db || userId === 'loading') {
+                console.error("Aguardando inicialização do Firebase/Auth.");
+                return;
+            }
+
+            const avatarUrl = getAvatarUrl(userName);
+
+            const newPost = {
+                content: postData.content,
+                authorId: userId,
+                authorName: userName,
+                authorPhoto: avatarUrl,
+                time: serverTimestamp(), // Usa timestamp do servidor
+                likes: 0,
+                comments: 0,
+                shared: 0,
+                likedBy: [],
+                mediaUrl: null,
+            };
+
+            try {
+                await addDoc(collection(db, POSTS_COLLECTION_PATH), newPost);
+                console.log("Manifestação salva.");
+            } catch (e) {
+                console.error("Erro ao adicionar manifestação:", e);
+            }
+        }
+        
+        /**
+         * Salva um novo comentário em um post.
+         */
+        async function saveComment(postId, content) {
+             if (!db || userId === 'loading') {
+                 console.error("Aguardando inicialização do Firebase/Auth para comentar.");
+                 return;
+             }
+             
+             const avatarUrl = getAvatarUrl(userName);
+             const commentRef = collection(db, POSTS_COLLECTION_PATH, postId, 'comments');
+             const postRef = doc(db, POSTS_COLLECTION_PATH, postId);
+             
+             try {
+                 // 1. Adiciona o comentário na subcoleção
+                 await addDoc(commentRef, {
+                     content: content,
+                     authorId: userId,
+                     authorName: userName,
+                     authorPhoto: avatarUrl,
+                     time: serverTimestamp(),
+                 });
+
+                 // 2. Incrementa o contador de comentários no documento pai
+                 await updateDoc(postRef, {
+                     comments: postsState.find(p => p.id === postId).comments + 1
+                 });
+
+                 console.log("Comentário salvo e contador atualizado.");
+                 commentContentInput.value = ''; // Limpa o input
+                 commentsContainer.scrollTop = commentsContainer.scrollHeight; // Rola para o final
+                 
+             } catch (e) {
+                 console.error("Erro ao adicionar comentário:", e);
+             }
+        }
+        
+        /**
+         * Lida com o clique de curtir/ressonar e atualiza o Firestore.
+         */
+        async function toggleLike(postId) {
+            if (!db || userId === 'loading') {
+                 console.warn("Aguardando Firebase/Auth para curtir.");
+                 return;
+            }
+            
+            const post = postsState.find(p => p.id === postId);
+            if (!post) return;
+            
+            const postRef = doc(db, POSTS_COLLECTION_PATH, postId);
+            const isLiked = post.likedBy.includes(userId);
+            
+            let newLikedBy = [...post.likedBy];
+            let newLikes;
+
+            if (isLiked) {
+                // Descurtir
+                newLikedBy = newLikedBy.filter(uid => uid !== userId);
+                newLikes = post.likes - 1;
+            } else {
+                // Curtir
+                newLikedBy.push(userId);
+                newLikes = post.likes + 1;
+            }
+
+            try {
+                await updateDoc(postRef, {
+                    likes: newLikes,
+                    likedBy: newLikedBy
+                });
+            } catch (e) {
+                console.error("Erro ao atualizar ressonância:", e);
+            }
+        }
+        
+        /**
+         * Salva os dados de nome e bio do perfil no Firestore.
+         */
+        async function saveProfileData(name, bio) {
+            if (!db || userId === 'loading') {
+                console.error("Aguardando inicialização do Firebase/Auth para salvar perfil.");
+                return;
+            }
+            
+            const profileRef = getProfileDocRef(db, userId);
+            
+            try {
+                await setDoc(profileRef, {
+                    name: name,
+                    bio: bio
+                }, { merge: true }); 
+                console.log("Perfil atualizado com sucesso.");
+                closeEditProfileModal();
+            } catch (e) {
+                console.error("Erro ao salvar perfil:", e);
+            }
+        }
+
+        // --- FUNÇÕES DE RENDERIZAÇÃO DE UI ---
+
+        /**
+         * Renderiza a visão de atividade/alertas do usuário.
+         */
+        function renderAlertsView() {
+            if (!userActivityContainer) return;
+            
+            if (userPostsState.length === 0) {
+                 userActivityContainer.innerHTML = `
+                    <div class="text-center post-card p-6 rounded-xl text-gray-500">
+                        <p class="mb-2">Você ainda não manifestou nenhuma energia.</p>
+                        <button onclick="renderPage('feed')" class="text-indigo-500 font-semibold hover:text-indigo-700">Crie sua primeira Manifestação!</button>
+                    </div>
+                 `;
+                 return;
+            }
+
+            // Ordena os posts do usuário por mais recente para esta visualização
+            const sortedUserPosts = [...userPostsState].sort((a, b) => b.time - a.time);
+
+            userActivityContainer.innerHTML = sortedUserPosts.map(post => {
+                const totalActivity = post.likes + post.comments;
+                
+                return `
+                    <div class="flex items-start post-card p-4 rounded-xl border border-indigo-100">
+                        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-sm">
+                            ${totalActivity}
+                        </div>
+                        <div class="ml-3 flex-1 overflow-hidden">
+                            <p class="text-xs text-gray-500">${formatTimeAgo(post.time)}</p>
+                            <p class="text-sm text-gray-700 mt-1 truncate">
+                                Sua manifestação: <span class="font-bold user-id-link" onclick="openCommentModal('${post.id}')">${post.content.substring(0, 50)}${post.content.length > 50 ? '...' : ''}</span>
+                            </p>
+                            <div class="flex space-x-4 text-xs mt-2 text-gray-500">
+                                <span class="flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1 text-red-400" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                                    ${post.likes} Ressonâncias
+                                </span>
+                                <span class="flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1 text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.8 2h8.4A1.8 1.8 0 0 1 18 3.8v8.4A1.8 1.8 0 0 1 16.2 14H14l-4 4-4-4H5.8A1.8 1.8 0 0 1 4 12.2V3.8A1.8 1.8 0 0 1 5.8 2z"/></svg>
+                                    ${post.comments} Comentários
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        /**
+         * Atualiza os elementos visuais do perfil e a contagem de manifestações.
+         */
+        function renderProfileView() {
+            const avatarUrl = getAvatarUrl(userName);
+            
+            if (profileNameEl) profileNameEl.textContent = userName;
+            if (profileBioEl) profileBioEl.textContent = userBio;
+            if (headerProfileImg) headerProfileImg.src = avatarUrl;
+            if (profileAvatarImg) profileAvatarImg.src = avatarUrl;
+            if (profileManifestationsCount) profileManifestationsCount.textContent = userPostsState.length.toString();
+        }
+
+        /**
+         * Atualiza o display de nome/avatar no modal de postagem.
+         */
+        function updatePostModalAuthorDisplay() {
+            const avatarUrl = getAvatarUrl(userName);
+            if (document.getElementById('post-modal-author-name')) document.getElementById('post-modal-author-name').textContent = userName + ' (Você)';
+            if (document.getElementById('post-modal-avatar-img')) document.getElementById('post-modal-avatar-img').src = avatarUrl;
+        }
+
+        function createPostHtml(post) {
+            const mediaHtml = post.mediaUrl 
+                ? `<div class="mt-4 rounded-xl overflow-hidden border border-gray-100">
+                    <img src="${post.mediaUrl}" 
+                         onerror="this.onerror=null;this.src='https://placehold.co/600x400/9ca3af/ffffff?text=Media+Indisponível'"
+                         alt="Conteúdo da Postagem" class="w-full h-auto object-cover">
+                   </div>`
+                : '';
+
+            const isLiked = post.likedBy.includes(userId);
+            const iconClass = isLiked ? 'fill="var(--primary-color)" class="text-indigo-600"' : 'fill="none" class="text-gray-500"';
+            const timeAgo = formatTimeAgo(post.time);
+            
+            return `
+                <div id="post-${post.id}" class="post-card rounded-xl p-4 sm:p-6 transition duration-150 hover:shadow-lg">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <img src="${post.authorPhoto}" alt="${post.authorName}" class="w-10 h-10 rounded-full object-cover border-2 border-gray-200">
+                            <div class="ml-3">
+                                <span class="block text-base font-semibold text-gray-800">${post.authorName}</span>
+                                <span class="block text-xs text-gray-500">${timeAgo}</span>
+                            </div>
+                        </div>
+                        <button class="text-gray-400 hover:text-gray-700 p-1 rounded-full transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                        </button>
+                    </div>
+
+                    <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">${post.content}</p>
+                    ${mediaHtml}
+
+                    <div class="flex items-center text-sm text-gray-500 mt-4 border-t border-gray-100 pt-3">
+                        <span class="mr-4">${post.likes} Ressonâncias</span>
+                        <span class="mr-4">${post.comments} Comentários</span>
+                        <span>${post.shared} Compartilhamentos</span>
+                    </div>
+
+                    <div class="flex justify-around border-t border-gray-100 pt-3 mt-3">
+                        <button class="btn-interact flex items-center p-2 rounded-lg ${isLiked ? 'text-indigo-600' : 'text-gray-500'}" onclick="toggleLike('${post.id}')">
+                            <svg id="like-icon-${post.id}" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" ${iconClass} stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                            <span class="ml-2 hidden sm:inline">Ressonar</span>
+                        </button>
+                        <button class="btn-interact flex items-center p-2 rounded-lg text-gray-500" onclick="openCommentModal('${post.id}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.8 2h8.4A1.8 1.8 0 0 1 18 3.8v8.4A1.8 1.8 0 0 1 16.2 14H14l-4 4-4-4H5.8A1.8 1.8 0 0 1 4 12.2V3.8A1.8 1.8 0 0 1 5.8 2z"/></svg>
+                            <span class="ml-2 hidden sm:inline">Comentar</span>
+                        </button>
+                        <button class="btn-interact flex items-center p-2 rounded-lg text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
+                            <span class="ml-2 hidden sm:inline">Compartilhar</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderFeed() {
+            if (feedContainer) {
+                // 1. Clonar e Ordenar o Estado
+                let sortedPosts = [...postsState];
+                
+                if (sortOrder === 'likes') {
+                    // Ordenar por mais likes (decrescente)
+                    sortedPosts.sort((a, b) => b.likes - a.likes);
+                } else {
+                    // Ordenar por tempo (mais recente, já que o time é um Date)
+                    sortedPosts.sort((a, b) => b.time - a.time);
+                }
+                
+                if (sortedPosts.length === 0) {
+                     feedContainer.innerHTML = `
+                        <div class="text-center post-card p-6 rounded-xl text-gray-500">
+                            <p class="mb-2">Ainda não há manifestações no fluxo.</p>
+                            <p class="font-semibold text-indigo-500">Seja o primeiro a co-criar!</p>
+                        </div>
+                     `;
+                     return;
+                }
+                feedContainer.innerHTML = sortedPosts.map(createPostHtml).join('');
+            }
+        }
+        
+        // --- LÓGICA DO MODAL DE COMENTÁRIOS ---
+        
+        let unsubscribeComments = null;
+
+        function openCommentModal(postId) {
+            currentPostIdForComments = postId;
+            
+            // 1. Assina os comentários para este post
+            if (unsubscribeComments) unsubscribeComments(); // Desfaz a assinatura anterior
+            subscribeToComments(postId);
+            
+            // 2. Abre o modal
+            commentsModal.classList.remove('opacity-0', 'pointer-events-none');
+            commentsModal.querySelector('div').classList.remove('scale-95');
+            document.body.classList.add('modal-open'); 
+            
+            // 3. Define o manipulador de submissão do formulário de comentários
+            newCommentForm.onsubmit = (event) => {
+                event.preventDefault();
+                const content = commentContentInput.value.trim();
+                if (content) {
+                    saveComment(currentPostIdForComments, content);
+                }
+            };
+        }
+
+        function closeCommentModal() {
+            commentsModal.querySelector('div').classList.add('scale-95');
+            setTimeout(() => {
+                commentsModal.classList.add('opacity-0', 'pointer-events-none');
+            }, 100); 
+            document.body.classList.remove('modal-open');
+            currentPostIdForComments = null;
+            if (unsubscribeComments) unsubscribeComments(); // Desfaz a assinatura
+            unsubscribeComments = null;
+        }
+
+        function subscribeToComments(postId) {
+            if (!db) return;
+
+            const commentsQuery = query(
+                collection(db, POSTS_COLLECTION_PATH, postId, 'comments'),
+                orderBy('time', 'asc') // Comentários em ordem cronológica
+            );
+
+            unsubscribeComments = onSnapshot(commentsQuery, (querySnapshot) => {
+                const comments = [];
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const time = data.time && data.time.toDate ? data.time.toDate() : new Date();
+                    comments.push({ id: doc.id, ...data, time });
+                });
+                renderCommentsInModal(comments);
+            }, (error) => {
+                console.error("Erro ao assinar comentários:", error);
+                renderCommentsInModal([]);
+            });
+        }
+
+        function renderCommentsInModal(comments) {
+            if (!commentsContainer) return;
+            
+            if (comments.length === 0) {
+                commentsContainer.innerHTML = `
+                    <p class="text-center text-gray-500 pt-4">Nenhuma frequência de resposta ainda. Seja o primeiro!</p>
+                `;
+                return;
+            }
+            
+            commentsContainer.innerHTML = comments.map(comment => {
+                return `
+                    <div class="flex items-start">
+                        <img src="${comment.authorPhoto}" alt="${comment.authorName}" class="w-8 h-8 rounded-full object-cover flex-shrink-0">
+                        <div class="ml-3 flex-1 bg-gray-50 p-3 rounded-xl">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-semibold text-gray-800">${comment.authorName}</span>
+                                <span class="text-xs text-gray-500">${formatTimeAgo(comment.time)}</span>
+                            </div>
+                            <p class="text-gray-700 text-sm mt-1 whitespace-pre-wrap">${comment.content}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // --- LÓGICA GERAL DE MODAL ---
+
+        function openModal(modalEl, inputEl) {
+            modalEl.classList.remove('opacity-0', 'pointer-events-none');
+            modalEl.querySelector('div').classList.remove('scale-95');
+            document.body.classList.add('modal-open'); 
+            if (inputEl) setTimeout(() => inputEl.focus(), 300); 
+        }
+
+        function closeModal(modalEl) {
+            modalEl.querySelector('div').classList.add('scale-95');
+            setTimeout(() => {
+                modalEl.classList.add('opacity-0', 'pointer-events-none');
+            }, 100); 
+            document.body.classList.remove('modal-open');
+        }
+
+        function openPostModal() {
+            if(currentPage !== 'feed') return;
+            openModal(createPostModal, postContentInput);
+        }
+
+        function closePostModal() {
+            closeModal(createPostModal);
+            postContentInput.value = ''; 
+        }
+        
+        function openEditProfileModal() {
+            editProfileNameInput.value = userName;
+            editProfileBioInput.value = userBio;
+            openModal(editProfileModal, editProfileNameInput);
+        }
+
+        function closeEditProfileModal() {
+            closeModal(editProfileModal);
+        }
+
+        // --- EVENT HANDLERS ---
+
+        function handlePostSubmit(event) {
+            event.preventDefault();
+            const content = postContentInput.value.trim();
+
+            if (content.length < 5) {
+                console.error("Manifestação muito curta. Mínimo de 5 caracteres.");
+                return; 
+            }
+            
+            savePost({ content: content });
+            closePostModal();
+        }
+        
+        function handleProfileSubmit(event) {
+            event.preventDefault();
+            const newName = editProfileNameInput.value.trim();
+            const newBio = editProfileBioInput.value.trim();
+
+            if (newName.length < 3) {
+                console.error("Nome muito curto.");
+                return;
+            }
+            
+            saveProfileData(newName, newBio);
+        }
+
+        // --- INICIALIZAÇÃO ---
+        
+        // Listeners para os formulários
+        document.getElementById('create-post-btn').addEventListener('click', openPostModal);
+        newPostForm.addEventListener('submit', handlePostSubmit);
+        editProfileForm.addEventListener('submit', handleProfileSubmit); 
+
+        // Inicializa o Firebase e o App
+        window.onload = () => {
+            setupFirebase();
+            renderPage('feed'); // Define a página inicial
+            updateSortButtonStyles(); // Define o estilo inicial do filtro
+        };
+        
+        // Expondo as funções para o HTML
+        window.toggleLike = toggleLike;
+        window.openPostModal = openPostModal;
+        window.closePostModal = closePostModal;
+        window.openEditProfileModal = openEditProfileModal;
+        window.closeEditProfileModal = closeEditProfileModal;
+        window.openCommentModal = openCommentModal; // Novo
+        window.closeCommentModal = closeCommentModal; // Novo
+        window.renderPage = renderPage;
+        window.setSortOrder = setSortOrder; // Novo
+
+    </script>
+
+</body>
+</html>
+
+
+
+
+
