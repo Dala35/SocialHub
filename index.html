@@ -436,7 +436,7 @@
   };
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=`;
-        const apiKey = ""; AlzaSyCTCbkB__-Dz3fqG-eshnajizpF2P-VeyE`;// 
+        const apiKey = ""; `;// 
 
         // --- INSTÂNCIAS FIREBASE ---
         let app, db, auth, currentUserId = null, currentUserName = "Usuário";
@@ -517,8 +517,8 @@
 
         // --- FIREBASE INICIALIZAÇÃO E AUTENTICAÇÃO ---
         
-        const initializeFirebase = async () => {
-            if (!firebaseConfig.apiKey) {AlzaSyCTCbkB__-Dz3fqG-eshnajizpF2P-VeyE`;
+        const firebaseConfig = {
+                apiKey: "AIzaSyCTCbKB__-dZ3fqG-eshnajizpF2P-VeyE",
                 console.error("Firebase Configuração indisponível. Continuando em modo não persistente.");
                 return;
             }
